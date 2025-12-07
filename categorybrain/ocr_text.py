@@ -1,10 +1,16 @@
 import re
 
-from typing import List
-
-from schemes import OcrPreviewItem, OcrPreviewResponse, OcrPredictedItem, OcrPredictResponse
 from categorybrain.categorybrain_ml import CategoryBrainML
 
+
+from typing import List
+
+from schemes import (
+    OcrPreviewItem,
+    OcrPreviewResponse,
+    OcrPredictedItem,
+    OcrPredictResponse,
+)
 
 
 SERVICE_WORDS = [
@@ -21,6 +27,7 @@ SERVICE_WORDS = [
 
 PRICE_RE = re.compile(r"(\d+[.,]\d{2})")
 
+
 def extract_price(line: str) -> float | None:
     """
     Ищем цену в строке.
@@ -30,12 +37,13 @@ def extract_price(line: str) -> float | None:
     if not matches:
         return None
 
-    raw = matches[-1]          # берём ПОСЛЕДНЕЕ совпадение в строке
+    raw = matches[-1]  # берём ПОСЛЕДНЕЕ совпадение в строке
     raw = raw.replace(",", ".")  # приводим к 3.99
     try:
         return float(raw)
     except ValueError:
         return None
+
 
 def parse_item_line(line: str) -> tuple[str, float] | None:
     """
@@ -68,7 +76,7 @@ def parse_receipt_text(raw_text: str, lang: str | None = None) -> OcrPreviewResp
 
     if not lines:
         raise ValueError("Receipt text is empty")
-    
+
     # 2) merchant - just first line
     merchant = lines[0]
     item_lines = lines[1:]
@@ -79,15 +87,15 @@ def parse_receipt_text(raw_text: str, lang: str | None = None) -> OcrPreviewResp
     for line in item_lines:
         low = line.lower()
 
-        # 3) пробуем вытащить total, есть 
-        if "total" in low: 
+        # 3) пробуем вытащить total, есть
+        if "total" in low:
             maybe_total = extract_price(line)
             if maybe_total is not None:
                 raw_total_guess = maybe_total
             # даже если это total, не рассматриваем как товар
             continue
 
-        #4) отфильтровываем явный мусор
+        # 4) отфильтровываем явный мусор
         if any(word in low for word in SERVICE_WORDS):
             continue
 
@@ -99,53 +107,52 @@ def parse_receipt_text(raw_text: str, lang: str | None = None) -> OcrPreviewResp
         item_name_raw, price = parsed
         items.append(
             OcrPreviewItem(
-                item_name_raw = item_name_raw,
-                price = price,
-                ocr_conf=0.9, # placeholder atm
+                item_name_raw=item_name_raw,
+                price=price,
+                ocr_conf=0.9,  # placeholder atm
             )
         )
 
-        #5) if results no items found - error
+        # 5) if results no items found - error
     if not items:
-            raise ValueError("Couldnt find of items")
-        
+        raise ValueError("Couldnt find of items")
+
     return OcrPreviewResponse(
-            merchant=merchant,
-            lang=lang,
-            items=items,
-            raw_total_guess=raw_total_guess
-        )
+        merchant=merchant, lang=lang, items=items, raw_total_guess=raw_total_guess
+    )
 
 
-def predict_on_preview(preview: OcrPreviewResponse) -> OcrPredictResponse:
+def predict_on_preview(
+    preview: OcrPreviewResponse, brain: CategoryBrainML
+) -> OcrPredictResponse:
     """
     Берём результат parse_receipt_text и прогоняем через CategoryBrainML:
     merchant + item_name -> category, bucket, conf.
     """
     predicted_items: List[OcrPredictedItem] = []
 
-    for item in preview.items: 
-        pred = CategoryBrainML.predict(
+    for item in preview.items:
+        # 1) Делаем предсказание по (merchant, item_name_raw)
+        cat, bucket, conf = brain.predict(
             merchant=preview.merchant,
             item_name=item.item_name_raw,
-            price=item.price
         )
-        # pred должен вернуть category, bucket, conf (как мы раньше делали)
 
+        # 2) Упаковываем одну строку в pydantic-модель
         predicted_items.append(
             OcrPredictedItem(
                 item_name_raw=item.item_name_raw,
                 price=item.price,
-                category=pred.category,
-                bucket=pred.bucket,
-                conf=pred.confidence,
+                category=cat,
+                bucket=bucket,
+                conf=conf,
             )
         )
 
-        return OcrPredictResponse(
-            merchant=preview.merchant,
-            lang=preview.lang,
-            items=predicted_items,
-            conf=pred.confidence
-        ) 
-    
+    # 3) Возвращаем общий ответ по всему чеку
+    return OcrPredictResponse(
+        merchant=preview.merchant,
+        lang=preview.lang,
+        items=predicted_items,
+        raw_total_guess=preview.raw_total_guess,
+    )

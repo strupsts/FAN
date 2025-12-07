@@ -20,7 +20,7 @@ from schemes import (
     ReceiptItemDetail,
     ReceiptDetail,
     SpendingSummary,
-    OcrPredictResponse
+    OcrPredictResponse,
 )
 
 from categorybrain.categorybrain_ml import CategoryBrainML
@@ -288,19 +288,20 @@ def api_ocr_preview(payload: OcrPreviewRequest):
 
     return preview
 
+
 @app.post("/api/ocr/preview-and-predict", response_model=OcrPredictResponse)
 def api_ocr_preview_and_predict(payload: OcrPreviewRequest):
     """
     Берём сырой текст чека -> парсим -> прогоняем через CategoryBrainML.
     Ничего не сохраняем в БД, это чисто предпросмотр.
     """
-    try: 
+    try:
         preview = parse_receipt_text(
             raw_text=payload.raw_text,
             lang=payload.lang,
         )
-    except ValueError as e: 
+    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    result = predict_on_preview(preview)
+    result = predict_on_preview(preview, brain)
     return result

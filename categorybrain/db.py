@@ -265,7 +265,7 @@ def get_spending_summary(
                 )
                 by_bucket_rows = cur.fetchall()
                 by_bucket = {
-                    r["bucket"]: float(r["total"])
+                    r["bucket"]: float(r["total"] or 0.0)
                     for r in by_bucket_rows
                 }
 
@@ -285,9 +285,9 @@ def get_spending_summary(
                 )
                 by_cat_rows = cur.fetchall()
                 by_category = {
-                    r["category"]: r["total"]
-                    for r in by_cat_rows
-                }
+                     r["category"]: float(r["total"] or 0.0)
+                     for r in by_cat_rows
+                    }
                 
                 return {
                     "total": total,
