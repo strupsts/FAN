@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>CategoryBrain Receipt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 16px;
+            background: #0b1020;
+            color: #f5f5f5;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+        }
+
+        .card {
+            background: #141a2b;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        input {
+            width: 100%;
+            padding: 6px 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border: 1px solid #333a4d;
+            background: #0f1522;
+            color: #f5f5f5;
+        }
+
+        button {
+            cursor: pointer;
+            border-radius: 4px;
+            border: none;
+            padding: 8px 12px;
+            margin-right: 8px;
+            background: #3b82f6;
+            color: white;
+            font-weight: 500;
+        }
+
+        button.secondary {
+            background: #4b5563;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #1f2937;
+            padding: 6px 4px;
+            text-align: left;
+        }
+
+        th {
+            font-weight: 600;
+            color: #9ca3af;
+        }
+
+        .bucket-NEEDS {
+            color: #4ade80;
+        }
+
+        .bucket-WANTS {
+            color: #facc15;
+        }
+
+        .bucket-INVEST {
+            color: #38bdf8;
+        }
+
+        .bucket-SAVE {
+            color: #a855f7;
+        }
+
+        #summary {
+            margin-top: 8px;
+            font-size: 0.95rem;
+        }
+
+        .error {
+            color: #f97373;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>CategoryBrain Receipt</h1>
+    <p style="color:#9ca3af;font-size:0.9rem;">
+        Забей позиции чека, нажми <b>Analyze receipt</b> — и увидишь категории / ведра / суммы.
+    </p>
+
+    <div class="card">
+        <form id="add-form">
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <div style="flex:1 1 200px;">
+                    <label for="merchant-input">Merchant</label>
+                    <input id="merchant-input" type="text" placeholder="Walmart" required />
+                </div>
+                <div style="flex:2 1 260px;">
+                    <label for="item-input">Item name</label>
+                    <input id="item-input" type="text" placeholder="Milk 2L" required />
+                </div>
+                <div style="flex:0 0 120px;">
+                    <label for="price-input">Price</label>
+                    <input id="price-input" type="number" step="0.01" min="0" placeholder="3.99" required />
+                </div>
+            </div>
+            <div style="margin-top:8px;">
+                <button type="submit">Add item</button>
+                <button type="button" id="clear-btn" class="secondary">Clear</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <h2 style="margin:0;font-size:1rem;">Receipt items</h2>
+            <button id="analyze-btn">Analyze receipt</button>
+        </div>
+
+        <table id="items-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Merchant</th>
+                    <th>Item</th>
+                    <th>Price</th>
+                    <th>Category</th>
+                    <th>Bucket</th>
+                    <th>Conf.</th>
+                </tr>
+            </thead>
+            <tbody id="items-tbody">
+                <!-- сюда будем рендерить строки -->
+            </tbody>
+        </table>
+
+        <div id="summary"></div>
+        <div id="error" class="error"></div>
+    </div>
+
+    <script>
+        const items = []; // сюда кладём черновик чека до отправки
+
+        const form = document.getElementById('add-form');
+        const merchantInput = document.getElementById('merchant-input');
+        const itemInput = document.getElementById('item-input');
+        const priceInput = document.getElementById('price-input');
+        const tbody = document.getElementById('items-tbody');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const summaryDiv = document.getElementById('summary');
+        const errorDiv = document.getElementById('error');
+
+        function renderTable(rows) {
+            // rows: либо локальный массив items, либо ответ сервера items с категориями
+            tbody.innerHTML = '';
+            rows.forEach((item, idx) => {
+                const tr = document.createElement('tr');
+
+                const tdIdx = document.createElement('td');
+                tdIdx.textContent = idx + 1;
+                tr.appendChild(tdIdx);
+
+                const tdMerchant = document.createElement('td');
+                tdMerchant.textContent = item.merchant;
+                tr.appendChild(tdMerchant);
+
+                const tdName = document.createElement('td');
+                tdName.textContent = item.item_name;
+                tr.appendChild(tdName);
+
+                const tdPrice = document.createElement('td');
+                tdPrice.textContent = item.price.toFixed ? item.price.toFixed(2) : Number(item.price).toFixed(2);
+                tr.appendChild(tdPrice);
+
+                const tdCat = document.createElement('td');
+                tdCat.textContent = item.category || '-';
+                tr.appendChild(tdCat);
+
+                const tdBucket = document.createElement('td');
+                tdBucket.textContent = item.bucket || '-';
+                if (item.bucket) {
+                    tdBucket.classList.add('bucket-' + item.bucket);
+                }
+                tr.appendChild(tdBucket);
+
+                const tdConf = document.createElement('td');
+                tdConf.textContent = item.confidence !== undefined
+                    ? (item.confidence * 100).toFixed(0) + '%'
+                    : '-';
+                tr.appendChild(tdConf);
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            errorDiv.textContent = '';
+            summaryDiv.textContent = '';
+
+            const merchant = merchantInput.value.trim();
+            const itemName = itemInput.value.trim();
+            const price = parseFloat(priceInput.value);
+
+            if (!merchant || !itemName || isNaN(price)) {
+                errorDiv.textContent = 'Заполни все поля.';
+                return;
+            }
+
+            items.push({ merchant, item_name: itemName, price });
+            renderTable(items);
+
+            // очистим инпуты
+            itemInput.value = '';
+            priceInput.value = '';
+            itemInput.focus();
+        });
+
+        clearBtn.addEventListener('click', () => {
+            items.length = 0;
+            tbody.innerHTML = '';
+            summaryDiv.textContent = '';
+            errorDiv.textContent = '';
+        });
+
+        analyzeBtn.addEventListener('click', async () => {
+            errorDiv.textContent = '';
+            summaryDiv.textContent = '';
+
+            if (items.length === 0) {
+                errorDiv.textContent = 'Сначала добавь хотя бы один товар.';
+                return;
+            }
+
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = 'Analyzing...';
+
+            try {
+                const resp = await fetch('/predict/receipt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items }),
+                });
+
+                if (!resp.ok) {
+                    throw new Error('Server error: ' + resp.status);
+                }
+
+                const data = await resp.json();
+                // data.items — уже с категориями и bucket; data.summary — суммы
+                renderTable(data.items);
+
+                const total = data.summary.total.toFixed(2);
+                const byBucket = data.summary.by_bucket;
+                const byCat = data.summary.by_category;
+
+                let bucketText = '';
+                for (const [bucket, sum] of Object.entries(byBucket)) {
+                    bucketText += `${bucket}: ${sum.toFixed(2)}  `;
+                }
+
+                summaryDiv.textContent = `Total: ${total} | ${bucketText}`;
+            } catch (err) {
+                console.error(err);
+                errorDiv.textContent = 'Ошибка запроса: ' + err.message;
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = 'Analyze receipt';
+            }
+        });
+
+        // рендерим пустую таблицу на старте
+        renderTable(items);
+    </script>
+</body>
+
+</html>

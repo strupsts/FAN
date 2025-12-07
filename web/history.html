@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>CategoryBrain – Receipts history</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 16px;
+            background: #0f172a;
+            color: #e5e7eb;
+        }
+
+        h1,
+        h2 {
+            margin-top: 0;
+        }
+
+        a {
+            color: #38bdf8;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(350px, 1fr) minmax(400px, 1.4fr);
+            gap: 16px;
+        }
+
+        .card {
+            background: #020617;
+            border-radius: 12px;
+            padding: 12px 16px;
+            border: 1px solid #1f2937;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        th {
+            text-align: left;
+            font-weight: 600;
+            color: #9ca3af;
+        }
+
+        tr:hover {
+            background: #111827;
+        }
+
+        tr.selected {
+            background: #1f2937;
+        }
+
+        button {
+            border-radius: 8px;
+            border: 1px solid #1d4ed8;
+            background: #1d4ed8;
+            color: white;
+            padding: 4px 10px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            background: #111827;
+            border: 1px solid #374151;
+            color: #9ca3af;
+        }
+
+        .muted {
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        .summary-row {
+            margin-top: 8px;
+            font-size: 13px;
+        }
+
+        .summary-row span {
+            display: inline-block;
+            margin-right: 12px;
+        }
+
+        .error {
+            color: #fb7185;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div>
+            <h1>Receipts history</h1>
+            <div class="muted">
+                <a href="/web">← Back to analyzer</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="layout">
+        <!-- Список чеков -->
+        <div class="card">
+            <h2>My receipts</h2>
+            <div class="muted" id="receipts-info">Loading...</div>
+            <table id="receipts-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Merchant</th>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>Source</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- строки подставит JS -->
+                </tbody>
+            </table>
+            <div class="error" id="receipts-error"></div>
+        </div>
+
+        <!-- Детали выбранного чека -->
+        <div class="card">
+            <h2>Receipt details</h2>
+            <div class="muted" id="details-info">Select a receipt to view items.</div>
+            <table id="items-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Item</th>
+                        <th>Price</th>
+                        <th>Category</th>
+                        <th>Bucket</th>
+                        <th>Conf.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- сюда пойдут строки -->
+                </tbody>
+            </table>
+            <div class="summary-row" id="details-summary"></div>
+            <div class="error" id="details-error"></div>
+        </div>
+    </div>
+
+    <script>
+        const receiptsTableBody = document.querySelector('#receipts-table tbody');
+        const receiptsInfoEl = document.getElementById('receipts-info');
+        const receiptsErrorEl = document.getElementById('receipts-error');
+
+        const itemsTableBody = document.querySelector('#items-table tbody');
+        const detailsInfoEl = document.getElementById('details-info');
+        const detailsSummaryEl = document.getElementById('details-summary');
+        const detailsErrorEl = document.getElementById('details-error');
+
+        let currentSelectedRow = null;
+
+        function formatDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return iso;
+            return d.toLocaleString();
+        }
+
+        function formatMoney(v) {
+            return '$' + Number(v).toFixed(2);
+        }
+
+        async function loadReceipts() {
+            receiptsInfoEl.textContent = 'Loading...';
+            receiptsErrorEl.textContent = '';
+            receiptsTableBody.innerHTML = '';
+
+            try {
+                const resp = await fetch('/api/receipts?limit=100');
+                if (!resp.ok) {
+                    throw new Error('HTTP ' + resp.status);
+                }
+                const data = await resp.json();
+
+                if (data.length === 0) {
+                    receiptsInfoEl.textContent = 'No receipts yet. Analyze a receipt first.';
+                    return;
+                }
+
+                receiptsInfoEl.textContent = `Total receipts: ${data.length}`;
+
+                for (const rec of data) {
+                    const tr = document.createElement('tr');
+
+                    const tdId = document.createElement('td');
+                    tdId.textContent = rec.id;
+                    tr.appendChild(tdId);
+
+                    const tdMerchant = document.createElement('td');
+                    tdMerchant.textContent = rec.merchant;
+                    tr.appendChild(tdMerchant);
+
+                    const tdDate = document.createElement('td');
+                    tdDate.textContent = formatDate(rec.created_at);
+                    tr.appendChild(tdDate);
+
+                    const tdTotal = document.createElement('td');
+                    tdTotal.textContent = formatMoney(rec.total_amount);
+                    tr.appendChild(tdTotal);
+
+                    const tdSource = document.createElement('td');
+                    const span = document.createElement('span');
+                    span.className = 'pill';
+                    span.textContent = rec.source;
+                    tdSource.appendChild(span);
+                    tr.appendChild(tdSource);
+
+                    const tdBtn = document.createElement('td');
+                    const btn = document.createElement('button');
+                    btn.textContent = 'Open';
+                    btn.addEventListener('click', () => selectReceipt(rec.id, tr));
+                    tdBtn.appendChild(btn);
+                    tr.appendChild(tdBtn);
+
+                    receiptsTableBody.appendChild(tr);
+                }
+
+            } catch (err) {
+                console.error(err);
+                receiptsErrorEl.textContent = 'Failed to load receipts.';
+                receiptsInfoEl.textContent = '';
+            }
+        }
+
+        async function selectReceipt(id, rowEl) {
+            if (currentSelectedRow) {
+                currentSelectedRow.classList.remove('selected');
+            }
+            currentSelectedRow = rowEl;
+            if (currentSelectedRow) {
+                currentSelectedRow.classList.add('selected');
+            }
+
+            detailsInfoEl.textContent = `Loading receipt #${id}...`;
+            detailsErrorEl.textContent = '';
+            itemsTableBody.innerHTML = '';
+            detailsSummaryEl.textContent = '';
+
+            try {
+                const resp = await fetch(`/api/receipts/${id}`);
+                if (!resp.ok) {
+                    if (resp.status === 404) {
+                        throw new Error('Receipt not found');
+                    }
+                    throw new Error('HTTP ' + resp.status);
+                }
+                const rec = await resp.json();
+
+                detailsInfoEl.textContent = `Receipt #${rec.id} – ${rec.merchant} – ${formatDate(rec.created_at)}`;
+
+                let total = 0;
+                const sumByBucket = {};
+                const sumByCategory = {};
+
+                rec.items.forEach((item, idx) => {
+                    const tr = document.createElement('tr');
+
+                    const tdIdx = document.createElement('td');
+                    tdIdx.textContent = idx + 1;
+                    tr.appendChild(tdIdx);
+
+                    const tdName = document.createElement('td');
+                    tdName.textContent = item.item_name;
+                    tr.appendChild(tdName);
+
+                    const tdPrice = document.createElement('td');
+                    tdPrice.textContent = formatMoney(item.price);
+                    tr.appendChild(tdPrice);
+
+                    const tdCat = document.createElement('td');
+                    tdCat.textContent = item.category;
+                    tr.appendChild(tdCat);
+
+                    const tdBucket = document.createElement('td');
+                    tdBucket.textContent = item.bucket;
+                    tr.appendChild(tdBucket);
+
+                    const tdConf = document.createElement('td');
+                    tdConf.textContent = item.confidence.toFixed(2);
+                    tr.appendChild(tdConf);
+
+                    itemsTableBody.appendChild(tr);
+
+                    total += item.price;
+                    sumByBucket[item.bucket] = (sumByBucket[item.bucket] || 0) + item.price;
+                    sumByCategory[item.category] = (sumByCategory[item.category] || 0) + item.price;
+                });
+
+                // summary по этому чеку (локально считаем в браузере)
+                const parts = [];
+                parts.push(`Total (items): ${formatMoney(total)}`);
+
+                const buckets = Object.entries(sumByBucket)
+                    .map(([b, v]) => `${b}: ${formatMoney(v)}`);
+                if (buckets.length > 0) {
+                    parts.push(`By bucket: ${buckets.join(' | ')}`);
+                }
+
+                const cats = Object.entries(sumByCategory)
+                    .map(([c, v]) => `${c}: ${formatMoney(v)}`);
+                if (cats.length > 0) {
+                    parts.push(`By category: ${cats.join(' | ')}`);
+                }
+
+                detailsSummaryEl.textContent = parts.join('  ||  ');
+
+            } catch (err) {
+                console.error(err);
+                detailsErrorEl.textContent = 'Failed to load receipt details.';
+                detailsInfoEl.textContent = 'Error loading receipt.';
+            }
+        }
+
+        // загружаем список чеков при открытии страницы
+        loadReceipts();
+    </script>
+</body>
+
+</html>

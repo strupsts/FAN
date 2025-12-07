@@ -1,0 +1,16 @@
+merchant,item_name,price,category,pred_cat,pred_bucket,confidence,true_bucket
+Walmart,Milk 2L,3.99,DAIRY,DAIRY,NEEDS,0.6,NEEDS
+Walmart,Chicken breast 1kg,12.49,MEAT,MEAT,NEEDS,0.6,NEEDS
+Walmart,Bananas 1kg,1.79,VEGETABSLES,VEGETABLES,NEEDS,0.6,WANTS
+McDonalds,Big Mac combo,11.99,FASTFOOD,FASTFOOD,WANTS,0.9,WANTS
+Starbucks,Latte grande,5.95,COFFEE,COFFEE,WANTS,0.9,WANTS
+Shoppers,Ibuprofen 200mg,8.99,PHARMACY,PHARMACY,NEEDS,0.6,NEEDS
+Canadian Tire,Motor oil 5W-30,34.99,AUTO,AUTO,NEEDS,0.9,NEEDS
+Costco,Bread whole wheat,3.49,BAKERY,BAKERY,NEEDS,0.6,NEEDS
+Costco,Cheddar cheese 500g,7.99,DAIRY,DAIRY,NEEDS,0.6,NEEDS
+Pizza Hut,Pepperoni pizza,19.99,TAKEOUT,TAKEOUT,WANTS,0.9,WANTS
+7-Eleven,Energy drink,3.49,WANTS_OTHER,WANTS_OTHER,WANTS,0.6,WANTS
+Walmart,Toilet paper 12 rolls,12.99,HOUSEHOLD,HOUSEHOLD,NEEDS,0.6,NEEDS
+Uniway,USB-C cable,8.99,ELECTRSONICS,ELECTRONICS,WANTS,0.9,WANTS
+Safeway,Apples 1kg,2.99,VEGETABLES,VEGETABLES,NEEDS,0.6,NEEDS
+Tim Hortons,Double Double,2.29,COFFEE,COFFEE,WANTS,0.9,WANTS

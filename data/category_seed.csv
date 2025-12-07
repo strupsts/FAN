@@ -1,0 +1,156 @@
+merchant,item_name,price,category
+Walmart,Milk 2L,3.99,DAIRY
+Walmart,Cheddar cheese block 400g,6.49,DAIRY
+Walmart,Greek yogurt 750g,4.99,DAIRY
+Safeway,Butter salted 454g,5.29,DAIRY
+Costco,Organic eggs 24 pack,8.99,DAIRY
+Superstore,Cottage cheese 500g,3.79,DAIRY
+Safeway,Whole milk 4L,5.79,DAIRY
+Costco,Mozzarella shredded 1kg,12.49,DAIRY
+Walmart,Chocolate milk 1L,2.49,DAIRY
+Superstore,Sour cream 500ml,3.19,DAIRY
+Safeway,Whipping cream 473ml,4.49,DAIRY
+Costco,Parmesan grated 500g,13.99,DAIRY
+
+Walmart,Chicken breast 1kg,12.49,MEAT
+Walmart,Ground beef 1kg,9.99,MEAT
+Safeway,Bacon 500g,7.49,MEAT
+Costco,Pork chops 2kg,16.99,MEAT
+Superstore,Turkey breast 1kg,10.99,MEAT
+Safeway,Salmon fillet 400g,11.99,MEAT
+Costco,Rotisserie chicken,7.99,MEAT
+Walmart,Chicken thighs 1kg,6.99,MEAT
+Safeway,Sausages Italian 6 pack,8.49,MEAT
+Superstore,Beef steak AAA 300g,9.99,MEAT
+Walmart,Hot dogs 12 pack,4.79,MEAT
+Costco,Beef jerky 500g,14.99,MEAT
+
+Walmart,Bananas 1kg,1.79,VEGETABLES
+Safeway,Apples 1kg,2.99,VEGETABLES
+Superstore,Carrots 2lb,1.89,VEGETABLES
+Walmart,Broccoli crown,1.49,VEGETABLES
+Safeway,Spinach bag 300g,3.99,VEGETABLES
+Costco,Tangerines 2kg,6.99,VEGETABLES
+Superstore,Potatoes 5lb,2.49,VEGETABLES
+Safeway,Cucumbers 3 pack,2.79,VEGETABLES
+Walmart,Tomatoes vine 1lb,2.29,VEGETABLES
+Costco,Mixed salad 1kg,5.49,VEGETABLES
+Walmart,Mushrooms 227g,2.39,VEGETABLES
+Superstore,Grapes 1kg,4.99,VEGETABLES
+
+McDonalds,Big Mac combo,11.99,FASTFOOD
+Burger King,Whopper meal,12.49,FASTFOOD
+Wendys,Baconator combo,13.79,FASTFOOD
+A&W,Teen Burger combo,11.49,FASTFOOD
+KFC,Popcorn chicken,9.99,FASTFOOD
+Taco Bell,Crunchwrap supreme,7.99,FASTFOOD
+Harveys,Original burger combo,12.09,FASTFOOD
+Dairy Queen,FlameThrower burger combo,13.49,FASTFOOD
+McDonalds,McChicken,6.49,FASTFOOD
+Wendys,Spicy chicken sandwich,7.29,FASTFOOD
+Taco Time,Super burrito,8.49,FASTFOOD
+McDonalds,Quarter Pounder combo,12.29,FASTFOOD
+
+Starbucks,Latte grande,5.95,COFFEE
+Tim Hortons,Double Double medium,2.29,COFFEE
+Starbucks,Cold Brew venti,5.49,COFFEE
+McDonalds,Premium Roast large,1.99,COFFEE
+Tim Hortons,Cappuccino,3.49,COFFEE
+Starbucks,Flat White,5.29,COFFEE
+Tim Hortons,Mocha small,2.99,COFFEE
+Starbucks,Caramel Macchiato tall,5.25,COFFEE
+McDonalds,Iced Coffee medium,2.49,COFFEE
+Starbucks,Pumpkin Spice Latte,6.29,COFFEE
+Tim Hortons,Iced Capp,3.99,COFFEE
+McDonalds,Americano,2.19,COFFEE
+
+Shoppers,Ibuprofen 200mg,8.99,PHARMACY
+Shoppers,Vitamin D tablets,6.49,PHARMACY
+Shoppers,Allergy relief 24 pack,12.49,PHARMACY
+Walmart,Bandages 50 pack,4.99,PHARMACY
+Walmart,Hand sanitizer 500ml,3.99,PHARMACY
+Shoppers,Acetaminophen 500mg,7.99,PHARMACY
+Walmart,Cold & flu medicine,8.49,PHARMACY
+Shoppers,Electrolyte solution,4.49,PHARMACY
+Shoppers,Nasal spray,6.99,PHARMACY
+Walmart,Cough syrup,5.99,PHARMACY
+Shoppers,Multivitamin gummies,11.49,PHARMACY
+Shoppers,Thermometer digital,14.99,PHARMACY
+
+Canadian Tire,Motor oil 5W-30,34.99,AUTO
+Canadian Tire,Windshield washer fluid 4L,4.29,AUTO
+Canadian Tire,Air freshener vent clip,3.99,AUTO
+Walmart,Car wipers pair,14.99,AUTO
+Canadian Tire,Tire inflator,39.99,AUTO
+Walmart,Car battery booster cables,19.99,AUTO
+Canadian Tire,Brake cleaner spray,6.49,AUTO
+Walmart,LED headlights pack,24.99,AUTO
+Canadian Tire,Oil filter,7.99,AUTO
+Walmart,Microfiber cleaning cloths,6.99,AUTO
+Canadian Tire,Car shampoo 1L,5.49,AUTO
+Walmart,Tire pressure gauge,3.99,AUTO
+
+Costco,Bread whole wheat,3.49,BAKERY
+Walmart,Butter croissants 12pk,4.99,BAKERY
+Safeway,Chocolate chip cookies pack,3.89,BAKERY
+Superstore,Gingerbread cookies,2.99,BAKERY
+Costco,Blueberry muffins 6pk,7.99,BAKERY
+Walmart,French baguette,2.29,BAKERY
+Safeway,Whole grain bread loaf,3.49,BAKERY
+Costco,Apple pie 1kg,8.99,BAKERY
+Walmart,Donuts 6pk,3.29,BAKERY
+Superstore,Vanilla cake slice,4.49,BAKERY
+Safeway,Cinnamon rolls 4pk,4.99,BAKERY
+Costco,Bagels 6pk,5.29,BAKERY
+
+Best Buy,HDMI cable 2m,14.99,ELECTRONICS
+Walmart,USB-C cable,8.99,ELECTRONICS
+Best Buy,Wireless mouse Logitech,24.99,ELECTRONICS
+Uniway,Gaming keyboard RGB,39.99,ELECTRONICS
+Walmart,Phone charger 20W,12.99,ELECTRONICS
+Best Buy,Bluetooth speaker portable,49.99,ELECTRONICS
+Uniway,USB hub 4-port,9.99,ELECTRONICS
+Walmart,MicroSD card 64GB,14.49,ELECTRONICS
+Best Buy,Webcam 1080p,29.99,ELECTRONICS
+Uniway,USB-C to HDMI adapter,12.49,ELECTRONICS
+Walmart,Wireless earbuds budget,19.99,ELECTRONICS
+Best Buy,PC fan RGB,15.99,ELECTRONICS
+
+Walmart,Toilet paper 12 rolls,12.99,HOUSEHOLD
+Dollarama,Garbage bags 20pk,2.99,HOUSEHOLD
+Walmart,Laundry detergent 2L,8.99,HOUSEHOLD
+Costco,Paper towels 12pk,19.99,HOUSEHOLD
+Dollarama,Kitchen sponges 6pk,1.50,HOUSEHOLD
+Walmart,Fabric softener 1.8L,6.49,HOUSEHOLD
+Safeway,Dish soap 750ml,3.49,HOUSEHOLD
+Dollarama,Broom with handle,4.00,HOUSEHOLD
+Walmart,Glass cleaner 1L,3.99,HOUSEHOLD
+Costco,Garbage bags 100pk,14.99,HOUSEHOLD
+Walmart,Hand soap 1L,2.49,HOUSEHOLD
+Dollarama,Aluminum foil 30m,1.99,HOUSEHOLD
+
+Pizza Hut,Pepperoni pizza,19.99,TAKEOUT
+DoorDash,Pho soup delivery,16.49,TAKEOUT
+Subway,Footlong sandwich,12.49,TAKEOUT
+Dominos,Chicken wings 10pc,11.99,TAKEOUT
+SkipTheDishes,Sushi combo 18pc,21.99,TAKEOUT
+Boston Pizza,Individual lasagna,17.49,TAKEOUT
+Panda Express,Beijing beef bowl,13.49,TAKEOUT
+Chipotle,Burrito bowl,12.49,TAKEOUT
+Pizza 73,Hawaiian pizza medium,17.99,TAKEOUT
+Subway,Chicken teriyaki 6",8.49,TAKEOUT
+DoorDash,Ramen bowl spicy,18.49,TAKEOUT
+Chipotle,Double steak burrito,14.99,TAKEOUT
+
+7-Eleven,Energy drink Monster,3.49,WANTS_OTHER
+Walmart,Potato chips family size,3.99,WANTS_OTHER
+Dollarama,Chocolate bar KitKat,1.29,WANTS_OTHER
+7-Eleven,Pocky chocolate sticks,2.49,WANTS_OTHER
+Walmart,Ice cream pint,5.49,WANTS_OTHER
+Dollarama,Fidget toy,3.50,WANTS_OTHER
+Walmart,Scented candle,4.99,WANTS_OTHER
+7-Eleven,Gummy bears pack,2.99,WANTS_OTHER
+Dollarama,Soda 1L,1.29,WANTS_OTHER
+Walmart,Popcorn butter 3pk,2.99,WANTS_OTHER
+7-Eleven,Slurpee medium,2.29,WANTS_OTHER
+Dollarama,Pringles small,1.79,WANTS_OTHER
