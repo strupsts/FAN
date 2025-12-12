@@ -48,6 +48,31 @@ class ReceiptItemInput:
     bucket: str
     confidence: float 
 
+# --- Model of entry data for training_samples ---    
+@dataclass 
+class TrainingSampleInput:
+    user_id: int
+    merchant: str 
+
+    # original name of the row (how ocr saw it)
+    item_name_raw: str
+
+    # normalized name for model (after lowercase, trim etc)
+    item_name_norm: str
+
+    lang: str | None
+    price: float | None
+
+    # real category (after user correction)
+    true_category: str
+
+    # what model was thinking
+    model_category: str | None
+    model_conf: float | None
+
+    
+
+
 def save_receipt(
         user_id: int,
         items: Iterable[ReceiptItemInput],
@@ -119,6 +144,56 @@ def save_receipt(
     finally: 
         conn.close()
 
+def save_training_samples(
+        samples: Iterable[TrainingSampleInput],
+        cfg: DbConfig | None = None,
+) -> None:
+    """
+    Saving a train samples in the table training_samples.
+    If list is empty - just quit
+    """
+    if cfg is None: 
+        cfg = DbConfig()
+
+    samples = list(samples)
+    if not samples:
+        return 
+
+    conn= get_connection(cfg)    
+    try: 
+        with conn: 
+            with conn.cursor() as cur:
+                for s in samples: 
+                    cur.execute(
+                        """
+                        INSERT INTO training_samples (
+                            user_id,
+                            merchant, 
+                            item_name_raw,
+                            item_name_norm,
+                            lang,
+                            price,
+                            true_category,
+                            model_category, 
+                            model_conf 
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """,
+                        (
+                            s.user_id,
+                            s.merchant,
+                            s.item_name_raw,
+                            s.item_name_norm,
+                            s.lang,
+                            s.price,
+                            s.true_category,
+                            s.model_category,
+                            s.model_conf
+                        )
+                    )
+    finally: 
+        conn.close()                    
+    
 
 def list_receipts(
         user_id: int,
@@ -296,3 +371,4 @@ def get_spending_summary(
                 }
     finally:
         conn.close()
+

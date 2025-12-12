@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 
-from schemes import (
+from schemas import (
     OcrPreviewRequest,
     OcrPreviewResponse,
     PredictRequest,
@@ -21,16 +21,24 @@ from schemes import (
     ReceiptDetail,
     SpendingSummary,
     OcrPredictResponse,
+    OcrConfirmedItem,
+    OcrConfirmResponse,
+    OcrConfirmRequest,
 )
 
+from schemas_llm import LLMItemRequest, LLMItemResponse
+
 from categorybrain.categorybrain_ml import CategoryBrainML
+from categorybrain.llm_classifier import LLMClassifier
 from categorybrain.db import (
     DbConfig,
     ReceiptItemInput,
+    TrainingSampleInput,
     save_receipt,
     list_receipts,
     get_receipt_with_items,
     get_spending_summary,
+    save_training_samples,
 )
 from categorybrain.ocr_text import parse_receipt_text, predict_on_preview
 
@@ -42,8 +50,19 @@ app = FastAPI(title="CategoryBrain API", version="0.1.0")
 
 MODEL_PATH = Path("models/categorybrain_ml.joblib")
 brain = CategoryBrainML.load(MODEL_PATH)
+llm_classifier = LLMClassifier()
 
 DB_CFG = DbConfig()
+
+
+def normalize_item_name(item_name: str) -> str:
+    """
+    Простейшая нормализация для обучения:
+    - убираем пробелы по краям
+    - приводим к нижнему регистру
+    """
+    return (item_name or "").strip().lower()
+
 
 # --- Статика: простая веб-морда
 app.mount("/web", StaticFiles(directory="web", html=True), name="web")
@@ -109,23 +128,37 @@ def predict_receipt(req: ReceiptRequest):
     sum_by_category: dict[str, float] = {}
 
     for item in req.items:
-        cat, bucket, conf = brain.predict(item.merchant, item.item_name)
+        LRcat, LRbucket, LRconf = brain.predict(item.merchant, item.item_name)
 
-        # собираем список позиций с предсказаниями
-        out_item = ReceiptItemResponse(
+        llm_req = LLMItemRequest(
             merchant=item.merchant,
-            item_name=item.item_name,
+            item_name_raw=item.item_name,
             price=item.price,
-            category=cat,
-            bucket=bucket,
-            confidence=conf,
+            lang=req.lang if hasattr(req, "lang") else "en",  # или "en" пока
         )
-        items_out.append(out_item)
+        llm_resp = llm_classifier.classify_item(llm_req)
+
+        items_out.append(
+            ReceiptItemResponse(
+                merchant=item.merchant,
+                item_name=item.item_name,
+                price=item.price,
+                # логрега
+                category=LRcat,
+                bucket=LRbucket,
+                confidence=LRconf,
+                # LLM
+                llm_category=llm_resp.category,
+                llm_bucket=llm_resp.bucket,
+                llm_confidence=llm_resp.confidence,
+                llm_norm_name=llm_resp.norm_name,
+            )
+        )
 
         # считаем суммы
         total += item.price
-        sum_by_bucket[bucket] = sum_by_bucket.get(bucket, 0.0) + item.price
-        sum_by_category[cat] = sum_by_category.get(cat, 0.0) + item.price
+        sum_by_bucket[LRbucket] = sum_by_bucket.get(LRbucket, 0.0) + item.price
+        sum_by_category[LRcat] = sum_by_category.get(LRcat, 0.0) + item.price
 
     summary = ReceiptSummary(
         total=total,
@@ -203,7 +236,7 @@ def api_get_receipt(receipt_id: int):
                 item_name=row["item_name"],
                 price=float(row["price"]),
                 category=row["category"],
-                bucket=row["category"],
+                bucket=row["bucket"],
                 confidence=float(row["confidence"]),
             )
             for row in data["items"]
@@ -305,3 +338,53 @@ def api_ocr_preview_and_predict(payload: OcrPreviewRequest):
 
     result = predict_on_preview(preview, brain)
     return result
+
+
+@app.post("/api/ocr/confirm", response_model=OcrConfirmResponse)
+def api_ocr_confirm(payload: OcrConfirmRequest):
+    if not payload.items:
+        raise HTTPException(status_code=400, detail="items must not be empty")
+
+    receipt_items: list[ReceiptItemInput] = []
+
+    for item in payload.items:
+        receipt_items.append(
+            ReceiptItemInput(
+                merchant=payload.merchant,
+                item_name=item.item_name_raw,  # в чеках храним как видел юзер
+                price=float(item.price),
+                category=item.final_category,  # уже исправленный класс
+                bucket=item.final_bucket,
+                confidence=float(item.model_conf),
+            )
+        )
+
+    receipt_id = save_receipt(
+        user_id=1, items=receipt_items, source="ocr", cfg=DB_CFG  # only one user atm
+    )
+
+    # Save to future re-train
+
+    training_rows: list[TrainingSampleInput] = []
+
+    for item in payload.items:
+        training_rows.append(
+            TrainingSampleInput(
+                user_id=1,
+                merchant=payload.merchant,
+                item_name_raw=item.item_name_raw,
+                item_name_norm=normalize_item_name(item.item_name_raw),
+                lang=payload.lang,
+                price=float(item.price),
+                true_category=item.final_category,  # что правильно
+                model_category=item.model_category,  # что думала модель
+                model_conf=float(item.model_conf),
+            )
+        )
+
+    save_training_samples(training_rows, cfg=DB_CFG)
+
+    return OcrConfirmResponse(
+        receipt_id=receipt_id,
+        items_saved=len(payload.items),
+    )

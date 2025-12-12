@@ -5,7 +5,7 @@ from categorybrain.categorybrain_ml import CategoryBrainML
 
 from typing import List
 
-from schemes import (
+from schemas import (
     OcrPreviewItem,
     OcrPreviewResponse,
     OcrPredictedItem,

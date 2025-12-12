@@ -165,7 +165,41 @@
         <div id="summary"></div>
         <div id="error" class="error"></div>
     </div>
+    <hr />
 
+    <section>
+        <h2>OCR + ML (черновик)</h2>
+        <p>Вставь сюда текст чека (скопированный из e-receipt или тестовый):</p>
+
+        <textarea id="ocr-raw-text" rows="8" style="width: 100%;"></textarea>
+
+        <div style="margin-top: 8px;">
+            <label for="ocr-lang">Язык (опционально):</label>
+            <input id="ocr-lang" type="text" value="en" style="width: 80px;" />
+        </div>
+
+        <button style="margin-top: 8px;" onclick="runOcrPreviewAndPredict()">
+            Разобрать чек (OCR + ML)
+        </button>
+
+        <h3>Результат разбора</h3>
+        <table border="1" cellpadding="4" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Название (raw)</th>
+                    <th>Цена</th>
+                    <th>Категория</th>
+                    <th>Бакет</th>
+                    <th>Уверенность</th>
+                </tr>
+            </thead>
+            <tbody id="ocr-result-body">
+                <!-- сюда будем вставлять строки -->
+            </tbody>
+        </table>
+
+        <p id="ocr-total-line" style="margin-top: 8px; font-weight: bold;"></p>
+    </section>
     <script>
         const items = []; // сюда кладём черновик чека до отправки
 
@@ -297,6 +331,79 @@
                 analyzeBtn.textContent = 'Analyze receipt';
             }
         });
+        async function runOcrPreviewAndPredict() {
+            const rawTextEl = document.getElementById('ocr-raw-text');
+            const langEl = document.getElementById('ocr-lang');
+            const tbody = document.getElementById('ocr-result-body');
+            const totalLine = document.getElementById('ocr-total-line');
+
+            const raw_text = rawTextEl.value.trim();
+            const lang = langEl.value.trim() || null;
+
+            // Чистим предыдущий результат
+            tbody.innerHTML = '';
+            totalLine.textContent = '';
+
+            if (!raw_text) {
+                alert('Вставь текст чека');
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/ocr/preview-and-predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ raw_text, lang }),
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    alert('Ошибка OCR: ' + (err.detail || resp.statusText));
+                    return;
+                }
+
+                const data = await resp.json();
+                // data: { merchant, lang, items: [...], raw_total_guess }
+
+                // Покажем merchant где-нибудь в totalLine
+                let totalText = `Магазин: ${data.merchant}`;
+                if (data.raw_total_guess !== null && data.raw_total_guess !== undefined) {
+                    totalText += ` | Итог по чеку (по OCR): ${data.raw_total_guess.toFixed(2)}`;
+                }
+                totalLine.textContent = totalText;
+
+                // Заполняем таблицу
+                for (const it of data.items) {
+                    const tr = document.createElement('tr');
+
+                    const tdName = document.createElement('td');
+                    tdName.textContent = it.item_name_raw;
+
+                    const tdPrice = document.createElement('td');
+                    tdPrice.textContent = it.price.toFixed(2);
+
+                    const tdCat = document.createElement('td');
+                    tdCat.textContent = it.category;
+
+                    const tdBucket = document.createElement('td');
+                    tdBucket.textContent = it.bucket;
+
+                    const tdConf = document.createElement('td');
+                    tdConf.textContent = (it.conf * 100).toFixed(0) + '%';
+
+                    tr.appendChild(tdName);
+                    tr.appendChild(tdPrice);
+                    tr.appendChild(tdCat);
+                    tr.appendChild(tdBucket);
+                    tr.appendChild(tdConf);
+
+                    tbody.appendChild(tr);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Ошибка сети или сервера при OCR');
+            }
+        }
 
         // рендерим пустую таблицу на старте
         renderTable(items);

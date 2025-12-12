@@ -38,6 +38,31 @@ class OcrPredictResponse(BaseModel):
     items: List[OcrPredictedItem]
     raw_total_guess: Optional[float] = None
 
+# OCR CONFIRM (for the receipt list table and training samples table in DB)
+
+class OcrConfirmedItem(BaseModel):
+    item_name_raw: str
+    price: float
+
+    # what model was thinking
+    model_category: str
+    model_bucket: str
+    model_conf: float
+
+    # what the user decided
+    final_category: str
+    final_bucket: str
+
+class OcrConfirmRequest(BaseModel):        
+    # stuff that front sending to server after confirming receipt
+    merchant: str
+    lang: Optional[str] = None
+    items: List[OcrConfirmedItem]
+
+class OcrConfirmResponse(BaseModel):
+    # respond from the server, things we saved 
+    receipt_id: int
+    items_saved: int    
 
 
     """
@@ -71,9 +96,17 @@ class ReceiptItemResponse(BaseModel):
     merchant: str
     item_name: str
     price: float
+
+    # логрега
     category: str
     bucket: str
     confidence: float
+
+    # LLM-поля (дополнительные, пока только для анализа)
+    llm_category: str
+    llm_bucket: str
+    llm_confidence: float
+    llm_norm_name: str
 
 class ReceiptSummary(BaseModel):
     total: float
