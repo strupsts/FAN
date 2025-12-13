@@ -26,10 +26,10 @@ from schemas import (
     OcrConfirmRequest,
 )
 
-from schemas_llm import LLMItemRequest, LLMItemResponse
+from LLM.schemas_llm import LLMItemRequest, LLMItemResponse
 
 from categorybrain.categorybrain_ml import CategoryBrainML
-from categorybrain.llm_classifier import LLMClassifier
+from LLM.llm_classifier import LLMClassifier
 from categorybrain.db import (
     DbConfig,
     ReceiptItemInput,
@@ -128,37 +128,64 @@ def predict_receipt(req: ReceiptRequest):
     sum_by_category: dict[str, float] = {}
 
     for item in req.items:
-        LRcat, LRbucket, LRconf = brain.predict(item.merchant, item.item_name)
-
+        # 1) LLM-placeholder
         llm_req = LLMItemRequest(
             merchant=item.merchant,
             item_name_raw=item.item_name,
             price=item.price,
-            lang=req.lang if hasattr(req, "lang") else "en",  # или "en" пока
+            lang=req.lang if hasattr(req, "lang") else "en",
         )
         llm_resp = llm_classifier.classify_item(llm_req)
+       
+        # 2) LogReg as support
+        lr_cat, lr_bucket, lr_conf = brain.predict(item.merchant, item.item_name)
+
+      
+
+        # 3) Decision which model has better predict
+        use_llm = (
+            llm_resp.category not in ("UNKNOWN", "", None)
+            and llm_resp.confidence is not None
+            and llm_resp.confidence >= 0.6
+        )
+
+        if use_llm:
+            final_cat = llm_resp.category
+            final_bucket = llm_resp.bucket
+            final_conf = llm_resp.confidence
+        else:
+            final_cat = lr_cat
+            final_bucket = lr_bucket
+            final_conf = lr_conf
 
         items_out.append(
             ReceiptItemResponse(
                 merchant=item.merchant,
                 item_name=item.item_name,
                 price=item.price,
-                # логрега
-                category=LRcat,
-                bucket=LRbucket,
-                confidence=LRconf,
-                # LLM
+
+                # Final values that goes to user and into DB 
+                category=final_cat,
+                bucket=final_bucket,
+                confidence=final_conf,
+
+                # LLM — debug fields
                 llm_category=llm_resp.category,
                 llm_bucket=llm_resp.bucket,
                 llm_confidence=llm_resp.confidence,
                 llm_norm_name=llm_resp.norm_name,
-            )
-        )
 
-        # считаем суммы
-        total += item.price
-        sum_by_bucket[LRbucket] = sum_by_bucket.get(LRbucket, 0.0) + item.price
-        sum_by_category[LRcat] = sum_by_category.get(LRcat, 0.0) + item.price
+                # LogReg - debug fields
+                lr_category=lr_cat,
+                lr_bucket=lr_bucket,
+                lr_confidence=lr_conf,
+            )
+    )
+
+    # Summary/Total
+    total += item.price
+    sum_by_bucket[final_bucket] = sum_by_bucket.get(final_bucket, 0.0) + item.price
+    sum_by_category[final_cat] = sum_by_category.get(final_cat, 0.0) + item.price
 
     summary = ReceiptSummary(
         total=total,
@@ -166,8 +193,7 @@ def predict_receipt(req: ReceiptRequest):
         by_category=sum_by_category,
     )
 
-    # -- Save check to DB --
-
+    # -- Preparing receipt to be saved in DB --
     items_for_db = [
         ReceiptItemInput(
             merchant=i.merchant,
@@ -185,6 +211,8 @@ def predict_receipt(req: ReceiptRequest):
         user_id=1, items=items_for_db, source="manual", cfg=DB_CFG
     )
     print(f"Receipt #{receipt_id} is saved.")
+
+
     return ReceiptResponse(
         receipt_id=receipt_id,
         items=items_out,

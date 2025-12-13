@@ -97,16 +97,21 @@ class ReceiptItemResponse(BaseModel):
     item_name: str
     price: float
 
-    # логрега
+    # главная версия, которую видит юзер (LLM или логрега)
     category: str
     bucket: str
     confidence: float
 
-    # LLM-поля (дополнительные, пока только для анализа)
-    llm_category: str
-    llm_bucket: str
-    llm_confidence: float
-    llm_norm_name: str
+    # от логрегression — чисто для анализа/отладки
+    lr_category: Optional[str] = None
+    lr_bucket: Optional[str] = None
+    lr_confidence: Optional[float] = None
+
+    # от LLM — тоже для анализа/отладки
+    llm_category: Optional[str] = None
+    llm_bucket: Optional[str] = None
+    llm_confidence: Optional[float] = None
+    llm_norm_name: Optional[str] = None
 
 class ReceiptSummary(BaseModel):
     total: float

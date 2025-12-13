@@ -1,7 +1,7 @@
 # scripts/test_llm_classifier.py
 
-from categorybrain.llm_classifier import LLMClassifier
-from schemas_llm import LLMItemRequest
+from LLM.llm_classifier import LLMClassifier
+from LLM.schemas_llm import LLMItemRequest
 
 
 def main() -> None:
