@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional
 
 class LLMItemRequest(BaseModel):
     """
@@ -22,4 +22,22 @@ class LLMItemResponse(BaseModel):
     bucket: str
     confidence:  float 
     norm_name: str
-        
+
+
+class LLMReceiptItem(BaseModel): 
+    """
+    Одна позиция из чека после парсинга LLM.
+    Тут merchant не дублируем — он общий для всего чека.
+    """
+    item_name_raw: str
+    price: Optional[float] = None # None if model is unsure.
+
+class LLMReceiptParseResult(BaseModel):
+    """
+    Итог парсинга текста/строк чека.
+    """
+    merchant: Optional[str] = None  # If couldn't find - None
+    lang: str
+    items: List[LLMReceiptItem]
+    raw_total_guess: Optional[float] = None #best-guess for total if found
+
