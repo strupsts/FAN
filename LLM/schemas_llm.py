@@ -1,43 +1,85 @@
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, Field
+from typing import List, Optional, Literal
+
+Category = Literal[
+    "DAIRY",
+    "MEAT",
+    "VEGETABLES",
+    "FASTFOOD",
+    "COFFEE",
+    "PHARMACY",
+    "AUTO",
+    "BAKERY",
+    "ELECTRONICS",
+    "HOUSEHOLD",
+    "TAKEOUT",
+    "WANTS_OTHER",
+    "UNKNOWN",
+]
+
+Bucket = Literal["NEEDS", "WANTS", "UNKNOWN"]
+
 
 class LLMItemRequest(BaseModel):
-    """
-    То, что наш backend будет готовить для LLM.
-
-    Эти поля НЕ идут напрямую от фронта — мы сами их собираем
-    для каждого товара.
-    """
-    merchant: str
+    merchant: Optional[str] = None
     item_name_raw: str
     price: Optional[float] = None
-    lang: str = "en" # lang from original source. Default is english
+    lang: str = "en"
+
 
 class LLMItemResponse(BaseModel):
-    """
-    То, что мы ожидаем получить от LLM-классификатора.
-    Пока без жёстких enum'ов, просто строки.
-    """
-    category: str
-    bucket: str
-    confidence:  float 
+    category: Category = "UNKNOWN"
+    bucket: Bucket = "UNKNOWN"
+    confidence: float = Field(default=0.2, ge=0.0, le=1.0)
     norm_name: str
 
 
-class LLMReceiptItem(BaseModel): 
-    """
-    Одна позиция из чека после парсинга LLM.
-    Тут merchant не дублируем — он общий для всего чека.
-    """
+class LLMReceiptItem(BaseModel):
     item_name_raw: str
-    price: Optional[float] = None # None if model is unsure.
+    price: Optional[float] = None
+
+    # parse+classify поля (для parse-only могут быть None/UNKNOWN)
+    category: Category = "UNKNOWN"
+    bucket: Bucket = "UNKNOWN"
+    confidence: float = Field(default=0.2, ge=0.0, le=1.0)
+    norm_name: Optional[str] = None
+
 
 class LLMReceiptParseResult(BaseModel):
-    """
-    Итог парсинга текста/строк чека.
-    """
-    merchant: Optional[str] = None  # If couldn't find - None
+    merchant: Optional[str] = None
+    lang: str = "en"
+    items: List[LLMReceiptItem] = Field(default_factory=list)
+    raw_total_guess: Optional[float] = None
+
+
+
+
+
+class LLMReceiptItem(BaseModel):
+    item_name_raw: str
+    price: Optional[float] = None
+
+    # добавь:
+    category: Optional[str] = None
+    bucket: Optional[str] = None
+    confidence: Optional[float] = None
+    norm_name: Optional[str] = None
+
+
+class LLMReceiptItemPred(BaseModel):
+    item_name_raw: str
+    price: Optional[float] = None
+
+    category: str
+    bucket: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    norm_name: str
+
+
+class LLMReceiptParseAndClassifyResult(BaseModel):
+    merchant: Optional[str] = None
     lang: str
-    items: List[LLMReceiptItem]
-    raw_total_guess: Optional[float] = None #best-guess for total if found
+    items: List[LLMReceiptItemPred] = []
+    raw_total_guess: Optional[float] = None
+
 

@@ -61,7 +61,12 @@ class LLMClassifier:
 
         # 3) выстреливаем в LLM
         try:
-            content = self.core.chat(messages, temperature=0.1, max_tokens=800)
+            content, _meta = self.core.chat(
+                messages,
+                temperature=0.1,
+                max_tokens=800,
+                return_meta=True,
+            )
         except Exception:
             # LLM вообще не ответила
             return LLMItemResponse(
