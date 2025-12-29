@@ -1,19 +1,43 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# === Настройки путей (поправим после clone) ===
+# === базовые пути ===
+FAN_DIR="$HOME/FAN"
 VLLM_DIR="$HOME/vllm-qwen"
-APP_DIR="$HOME/CategoryBrain"   # после clone будет так
+
+RUN_DIR="$FAN_DIR/.run"
+LOG_DIR="$FAN_DIR/logs"
 VLLM_PORT=8000
 
-# процессы/команды — поправим под твой реальный старт позже
-VLLM_CMD="cd \"$VLLM_DIR\" && source .venv/bin/activate && vllm serve Qwen/Qwen3-8B-AWQ --served-model-name qwen3-8b --host 0.0.0.0 --port $VLLM_PORT --max-model-len 2048 --gpu-memory-utilization 0.85"
+mkdir -p "$RUN_DIR" "$LOG_DIR"
 
-# ===== helpers =====
-is_listen() { ss -ltn | grep -q ":$1 "; }
+# === helpers ===
+
+activate_venv() {
+  local dir="$1"
+  if [[ -f "$dir/.venv/bin/activate" ]]; then
+    # shellcheck disable=SC1090
+    source "$dir/.venv/bin/activate"
+  else
+    echo "WARN: no venv in $dir (.venv/bin/activate not found)" >&2
+  fi
+}
+
+is_pid_running() {
+  local pid_file="$1"
+  if [[ -f "$pid_file" ]]; then
+    local pid
+    pid="$(cat "$pid_file")"
+    if kill -0 "$pid" 2>/dev/null; then
+      return 0
+    fi
+  fi
+  return 1
+}
 
 status_line() {
-  local name="$1"; local ok="$2"
+  local name="$1"
+  local ok="$2"
   if [[ "$ok" == "1" ]]; then
     printf "%-12s | \e[32mRUNNING\e[0m\n" "$name"
   else
@@ -22,9 +46,16 @@ status_line() {
 }
 
 status_all() {
-  local redis_ok=0 vllm_ok=0
-  systemctl is-active --quiet redis-server && redis_ok=1 || true
-  is_listen "$VLLM_PORT" && vllm_ok=1 || true
+  local redis_ok=0
+  local vllm_ok=0
+
+  if systemctl is-active --quiet redis-server; then
+    redis_ok=1
+  fi
+
+  if is_pid_running "$RUN_DIR/vllm.pid"; then
+    vllm_ok=1
+  fi
 
   echo "=== STATUS ==="
   status_line "redis" "$redis_ok"
@@ -32,41 +63,85 @@ status_all() {
   echo
 }
 
+# === redis ===
+
 start_redis() {
   sudo systemctl start redis-server
 }
 
+stop_redis() {
+  sudo systemctl stop redis-server || true
+}
+
+# === vLLM ===
+
 start_vllm() {
-  # если уже слушает порт — не стартуем второй раз
-  if is_listen "$VLLM_PORT"; then
-    echo "vLLM already running on port $VLLM_PORT"
+  local pidf="$RUN_DIR/vllm.pid"
+
+  if is_pid_running "$pidf"; then
+    echo "vLLM already running (pid $(cat "$pidf"))"
     return 0
   fi
 
-  # запускаем в фоне через nohup
-  nohup bash -lc "$VLLM_CMD" > "$HOME/vllm.log" 2>&1 &
-  echo "vLLM starting... log: $HOME/vllm.log"
+  (
+    cd "$VLLM_DIR"
+    activate_venv "$VLLM_DIR"
+    nohup vllm serve Qwen/Qwen3-8B-AWQ \
+      --served-model-name qwen3-8b \
+      --host 0.0.0.0 --port "$VLLM_PORT" \
+      --max-model-len 2048 \
+      --gpu-memory-utilization 0.85 \
+      > "$LOG_DIR/vllm.log" 2>&1 &
+    echo $! > "$pidf"
+  )
+
+  echo "vLLM starting... log: $LOG_DIR/vllm.log"
 }
 
 stop_vllm() {
-  # грубо, но работает: гасим процесс vllm serve
-  pkill -f "vllm serve" || true
+  local pidf="$RUN_DIR/vllm.pid"
+
+  if is_pid_running "$pidf"; then
+    kill "$(cat "$pidf")" 2>/dev/null || true
+    rm -f "$pidf"
+  else
+    # fallback, если pid-файл потеряли
+    pkill -f "vllm serve Qwen/Qwen3-8B-AWQ" 2>/dev/null || true
+    rm -f "$pidf" 2>/dev/null || true
+  fi
 }
 
+# === общие операции ===
+
+start_all() {
+  start_redis
+  start_vllm
+}
+
+stop_all() {
+  stop_vllm
+  stop_redis
+}
+
+restart_all() {
+  stop_all
+  start_all
+}
+
+# === CLI ===
+
 case "${1:-menu}" in
-  status) status_all ;;
+  status)
+    status_all
+    ;;
   start)
-    start_redis
-    start_vllm
+    start_all
     ;;
   stop)
-    stop_vllm
-    sudo systemctl stop redis-server
+    stop_all
     ;;
   restart)
-    stop_vllm
-    sudo systemctl restart redis-server
-    start_vllm
+    restart_all
     ;;
   menu|*)
     while true; do
@@ -78,10 +153,10 @@ case "${1:-menu}" in
       echo "0) exit"
       read -r -p "> " choice
       case "$choice" in
-        1) "$0" start ;;
-        2) "$0" stop ;;
-        3) "$0" restart ;;
-        4) "$0" status ;;
+        1) start_all ;;
+        2) stop_all ;;
+        3) restart_all ;;
+        4) status_all ;;
         0) exit 0 ;;
       esac
       echo
