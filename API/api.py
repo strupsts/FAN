@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 
+
 from schemas import (
     OcrPreviewRequest,
     OcrPreviewResponse,
@@ -28,9 +29,9 @@ from schemas import (
 
 from LLM.schemas_llm import LLMItemRequest, LLMItemResponse
 
-from categorybrain.categorybrain_ml import CategoryBrainML
+from outdated.categorybrain_ml import CategoryBrainML
 from LLM.llm_classifier import LLMClassifier
-from categorybrain.db import (
+from API.db import (
     DbConfig,
     ReceiptItemInput,
     TrainingSampleInput,
@@ -40,7 +41,6 @@ from categorybrain.db import (
     get_spending_summary,
     save_training_samples,
 )
-from categorybrain.ocr_text import parse_receipt_text, predict_on_preview
 
 from datetime import datetime, timedelta, timezone
 
@@ -48,7 +48,7 @@ from datetime import datetime, timedelta, timezone
 
 app = FastAPI(title="CategoryBrain API", version="0.1.0")
 
-MODEL_PATH = Path("models/categorybrain_ml.joblib")
+MODEL_PATH = Path("models/categorybrazin_ml.joblib")
 brain = CategoryBrainML.load(MODEL_PATH)
 llm_classifier = LLMClassifier()
 

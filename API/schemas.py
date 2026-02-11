@@ -1,3 +1,15 @@
+"""
+Compatibility shim.
+
+Старый код делал:
+
+    from schemas import PredictRequest, ...
+
+А реальные модели лежат в API.schemas.
+Этот модуль просто реэкспортирует их.
+"""
+
+from API.schemas import *  # noqa: F401,F403
 from pydantic import BaseModel
 from typing import List, Optional
 

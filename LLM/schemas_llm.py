@@ -1,5 +1,11 @@
+from datetime import datetime
+
+from __future__ import annotations
+
+from typing import Any, List, Optional, Literal, Dict
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal
+
+# --- базовые типы для категорий/ведер ---
 
 Category = Literal[
     "DAIRY",
@@ -20,6 +26,8 @@ Category = Literal[
 Bucket = Literal["NEEDS", "WANTS", "UNKNOWN"]
 
 
+# --- Классификация одной позиции чека (LLM classifier) ---
+
 class LLMItemRequest(BaseModel):
     merchant: Optional[str] = None
     item_name_raw: str
@@ -34,11 +42,11 @@ class LLMItemResponse(BaseModel):
     norm_name: str
 
 
+# --- Парсинг чека целиком (LLM receipt parser) ---
+
 class LLMReceiptItem(BaseModel):
     item_name_raw: str
     price: Optional[float] = None
-
-    # parse+classify поля (для parse-only могут быть None/UNKNOWN)
     category: Category = "UNKNOWN"
     bucket: Bucket = "UNKNOWN"
     confidence: float = Field(default=0.2, ge=0.0, le=1.0)
@@ -52,34 +60,26 @@ class LLMReceiptParseResult(BaseModel):
     raw_total_guess: Optional[float] = None
 
 
+# --- RQ job-схемы для очереди LLM receipt parser ---
+
+class LlmReceiptJobCreateRequest(BaseModel):
+    """
+    Запрос от клиента на постановку задачи в очередь:
+    пока только текстовые строки чека.
+    """
+    lang: str = "en"
+    lines: List[str]
+    max_tokens: int = Field(default=256, ge=32, le=1024)
 
 
-
-class LLMReceiptItem(BaseModel):
-    item_name_raw: str
-    price: Optional[float] = None
-
-    # добавь:
-    category: Optional[str] = None
-    bucket: Optional[str] = None
-    confidence: Optional[float] = None
-    norm_name: Optional[str] = None
+class LlmReceiptJobEnqueueResponse(BaseModel):
+    job_id: str
 
 
-class LLMReceiptItemPred(BaseModel):
-    item_name_raw: str
-    price: Optional[float] = None
-
-    category: str
-    bucket: str
-    confidence: float = Field(ge=0.0, le=1.0)
-    norm_name: str
-
-
-class LLMReceiptParseAndClassifyResult(BaseModel):
-    merchant: Optional[str] = None
-    lang: str
-    items: List[LLMReceiptItemPred] = []
-    raw_total_guess: Optional[float] = None
-
-
+class LlmReceiptJobStatusResponse(BaseModel):
+    id: str
+    status: str
+    enqueued_at: Optional[str] = None
+    started_at: Optional[str] = None
+    ended_at: Optional[str] = None
+    result: Optional[dict[str, Any]] = None
