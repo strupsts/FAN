@@ -1,46 +1,40 @@
-# Byte-compiled / cache
+# Python
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Virtual environments
+# Virtual envs
 .venv/
 venv/
 env/
 
-# Packaging
-build/
-dist/
-*.egg-info/
+# Environment
+.env
+.env.*
 
-# Tool caches
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-.coverage.*
-htmlcov/
-
-# Editors
+# IDE
 .vscode/
 .idea/
 
-# Env files
-.env
-.env.*
-*.env
-
-# Logs / runtime output
-logs/
-out/
-.run/
-
-# OS artifacts
+# OS
 .DS_Store
 Thumbs.db
 
-chatgptpassword
-chatgptpassword.pub
+# App storage
+storage/receipts/*
+!storage/receipts/.gitkeep
 
-outdated/
+# Logs
+*.log
+
+# Models / large local artifacts
+models/
+outputs/
+*.safetensors
+*.bin
+*.pt
+*.pth
