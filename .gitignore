@@ -9,6 +9,7 @@ __pycache__/
 
 # Virtual envs
 .venv/
+.venv-win/
 venv/
 env/
 
@@ -41,3 +42,4 @@ outputs/
 
 # Python package metadata
 *.egg-info/
+.venv-win/
