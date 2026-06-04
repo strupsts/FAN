@@ -38,3 +38,6 @@ outputs/
 *.bin
 *.pt
 *.pth
+
+# Python package metadata
+*.egg-info/
