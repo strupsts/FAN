@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from app.adapters.outbound.analytics.in_memory_analytics_adapter import InMemoryAnalyticsAdapter
 from app.adapters.outbound.db.in_memory_repositories import (
@@ -11,7 +12,7 @@ from app.adapters.outbound.db.in_memory_repositories import (
 from app.adapters.outbound.llm.fake_receipt_parser_adapter import FakeReceiptParserAdapter
 from app.adapters.outbound.ocr.fake_ocr_adapter import FakeOCRAdapter
 from app.adapters.outbound.privacy.noop_privacy_adapter import NoopPrivacyAdapter
-from app.adapters.outbound.storage.in_memory_image_storage import InMemoryImageStorageAdapter
+from app.adapters.outbound.storage.local_image_storage import LocalImageStorageAdapter
 from app.application import (
     ConfirmReceiptUseCase,
     GetReceiptHistoryUseCase,
@@ -22,7 +23,7 @@ from app.application import (
 
 @dataclass
 class AppContainer:
-    image_storage: InMemoryImageStorageAdapter
+    image_storage: LocalImageStorageAdapter
     ocr: FakeOCRAdapter
     parser: FakeReceiptParserAdapter
     receipt_repository: InMemoryReceiptRepository
@@ -38,7 +39,10 @@ class AppContainer:
 
 
 def build_container() -> AppContainer:
-    image_storage = InMemoryImageStorageAdapter()
+    project_root = Path(__file__).resolve().parents[3]
+    receipt_storage_dir = project_root / "storage" / "receipts"
+
+    image_storage = LocalImageStorageAdapter(base_dir=receipt_storage_dir)
     ocr = FakeOCRAdapter()
     parser = FakeReceiptParserAdapter()
     receipt_repository = InMemoryReceiptRepository()

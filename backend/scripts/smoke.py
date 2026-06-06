@@ -21,6 +21,7 @@ def main() -> None:
     print([item.name for item in draft.items])
     print([event.name for event in container.analytics.events])
     print(len(container.prediction_repository.predictions))
+    print(draft.image_ref)
 
 
 if __name__ == "__main__":
