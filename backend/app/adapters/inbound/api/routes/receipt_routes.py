@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+from datetime import date
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, UploadFile
 
 from app.adapters.inbound.api.routes.receipt_schemas import (
     ConfirmReceiptRequest,
-    MoneyResponse,
+    ReceiptDraftResponse,
+    ReceiptResponse,
+    SpendingSummaryResponse,
+    receipt_draft_to_response,
     receipt_to_response,
+    summary_to_response,
 )
 from app.application import ConfirmReceiptCommand, ProcessReceiptCommand
 from app.domain import Money
@@ -29,12 +34,12 @@ def get_current_user_id() -> UUID:
     return _FAKE_USER_ID
 
 
-@router.post("/process")
+@router.post("/process", response_model=ReceiptDraftResponse)
 async def process_receipt(
     file: UploadFile = File(...),
     container: AppContainer = Depends(get_container),
     user_id: UUID = Depends(get_current_user_id),
-) -> dict:
+) -> ReceiptDraftResponse:
     image_bytes = await file.read()
 
     command = ProcessReceiptCommand(
@@ -46,37 +51,15 @@ async def process_receipt(
 
     draft = container.process_receipt_use_case.execute(command)
 
-    return {
-        "id": str(draft.id),
-        "merchant_name": draft.merchant_name,
-        "total": {
-            "amount": str(draft.total.amount) if draft.total else None,
-            "currency": draft.total.currency if draft.total else None,
-        },
-        "items": [
-            {
-                "name": item.name,
-                "total_price": {
-                    "amount": str(item.total_price.amount),
-                    "currency": item.total_price.currency,
-                },
-                "category": item.category.value,
-                "bucket": item.bucket.value,
-                "confidence": item.confidence,
-            }
-            for item in draft.items
-        ],
-        "image_ref": draft.image_ref,
-        "parser_name": draft.parser_name,
-    }
+    return receipt_draft_to_response(draft)
 
 
-@router.post("/confirm")
+@router.post("/confirm", response_model=ReceiptResponse)
 def confirm_receipt(
     request: ConfirmReceiptRequest,
     container: AppContainer = Depends(get_container),
     user_id: UUID = Depends(get_current_user_id),
-) -> dict:
+) -> ReceiptResponse:
     command = ConfirmReceiptCommand(
         user_id=user_id,
         draft_id=request.draft_id,
@@ -92,60 +75,29 @@ def confirm_receipt(
 
     confirmed_receipt = container.confirm_receipt_use_case.execute(command)
 
-    return receipt_to_response(confirmed_receipt).model_dump()
+    return receipt_to_response(confirmed_receipt)
 
 
-@router.get("/history")
+@router.get("/history", response_model=list[ReceiptResponse])
 def get_receipt_history(
     container: AppContainer = Depends(get_container),
     user_id: UUID = Depends(get_current_user_id),
-) -> list[dict]:
+) -> list[ReceiptResponse]:
     receipts = container.get_receipt_history_use_case.execute(user_id=user_id)
-    return [receipt_to_response(receipt).model_dump() for receipt in receipts]
+    return [receipt_to_response(receipt) for receipt in receipts]
 
 
-@router.get("/summary")
+@router.get("/summary", response_model=SpendingSummaryResponse)
 def get_receipt_summary(
     from_date: str,
     to_date: str,
     container: AppContainer = Depends(get_container),
     user_id: UUID = Depends(get_current_user_id),
-) -> dict:
-    from datetime import date
-
+) -> SpendingSummaryResponse:
     summary = container.get_spending_summary_use_case.execute(
         user_id=user_id,
         from_date=date.fromisoformat(from_date),
         to_date=date.fromisoformat(to_date),
     )
 
-    return {
-        "from_date": summary.from_date.isoformat(),
-        "to_date": summary.to_date.isoformat(),
-        "total_spent": MoneyResponse(
-            amount=str(summary.total_spent.amount),
-            currency=summary.total_spent.currency,
-        ).model_dump(),
-        "by_category": [
-            {
-                "category": item.category.value,
-                "total": {
-                    "amount": str(item.total.amount),
-                    "currency": item.total.currency,
-                },
-                "transaction_count": item.transaction_count,
-            }
-            for item in summary.by_category
-        ],
-        "by_merchant": [
-            {
-                "merchant_name": item.merchant_name,
-                "total": {
-                    "amount": str(item.total.amount),
-                    "currency": item.total.currency,
-                },
-                "transaction_count": item.transaction_count,
-            }
-            for item in summary.by_merchant
-        ],
-    }
+    return summary_to_response(summary)
