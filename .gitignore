@@ -16,6 +16,8 @@ env/
 # Environment
 .env
 .env.*
+!.env.example
+!backend/.env.example
 
 # IDE
 .vscode/
@@ -42,4 +44,3 @@ outputs/
 
 # Python package metadata
 *.egg-info/
-.venv-win/
