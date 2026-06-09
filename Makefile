@@ -3,15 +3,17 @@
 BACKEND_DIR := backend
 PYTHON := $(BACKEND_DIR)/.venv/bin/python
 PIP := $(PYTHON) -m pip
-UVICORN := $(BACKEND_DIR)/.venv/bin/uvicorn
 
-.PHONY: help setup api health process smoke status clean-pyc
+.PHONY: help setup api db-up db-down db-logs health process smoke status clean-pyc
 
 help:
 > @echo "F.A.N. dev commands:"
 > @echo ""
 > @echo "  make setup      Create/update WSL backend venv and install dependencies"
 > @echo "  make api        Start FastAPI dev server"
+> @echo "  make db-up      Start Postgres"
+> @echo "  make db-down    Stop Postgres"
+> @echo "  make db-logs    Show Postgres logs"
 > @echo "  make health     Check /health endpoint"
 > @echo "  make process    Send sample receipt to /api/receipts/process"
 > @echo "  make smoke      Run core smoke test without HTTP"
@@ -25,6 +27,15 @@ setup:
 
 api:
 > cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/uvicorn app.main:app --reload
+
+db-up:
+> docker compose up -d db
+
+db-down:
+> docker compose down
+
+db-logs:
+> docker compose logs -f db
 
 health:
 > curl http://127.0.0.1:8000/health
