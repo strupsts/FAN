@@ -4,7 +4,7 @@ BACKEND_DIR := backend
 PYTHON := $(BACKEND_DIR)/.venv/bin/python
 PIP := $(PYTHON) -m pip
 
-.PHONY: help setup api db-up db-down db-logs health process smoke status clean-pyc
+.PHONY: help setup api db-up db-down db-logs db-init health process smoke status clean-pyc
 
 help:
 > @echo "F.A.N. dev commands:"
@@ -14,6 +14,7 @@ help:
 > @echo "  make db-up      Start Postgres"
 > @echo "  make db-down    Stop Postgres"
 > @echo "  make db-logs    Show Postgres logs"
+> @echo "  make db-init    Create database tables"
 > @echo "  make health     Check /health endpoint"
 > @echo "  make process    Send sample receipt to /api/receipts/process"
 > @echo "  make smoke      Run core smoke test without HTTP"
@@ -36,6 +37,9 @@ db-down:
 
 db-logs:
 > docker compose logs -f db
+
+db-init:
+> cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/python scripts/init_db.py
 
 health:
 > curl http://127.0.0.1:8000/health
