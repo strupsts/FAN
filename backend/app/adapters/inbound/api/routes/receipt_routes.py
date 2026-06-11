@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, UploadFile
 
@@ -16,14 +16,14 @@ from app.adapters.inbound.api.routes.receipt_schemas import (
 )
 from app.application import ConfirmReceiptCommand, ProcessReceiptCommand
 from app.domain import Money
-from app.infrastructure import AppContainer, build_container
+from app.infrastructure import AppContainer, build_container, get_settings
 
 router = APIRouter(prefix="/api/receipts", tags=["receipts"])
 
 _container = build_container()
 
 # Temporary fake user until auth is added.
-_FAKE_USER_ID = uuid4()
+_FAKE_USER_ID = get_settings().dev_user_id
 
 
 def get_container() -> AppContainer:

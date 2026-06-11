@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from uuid import UUID
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,6 +10,7 @@ class Settings(BaseSettings):
     app_env: str = "local"
     database_url: str = "postgresql+psycopg://fan:fan_dev_password@localhost:5432/fan"
     receipt_storage_dir: Path = Path("../storage/receipts")
+    dev_user_id: UUID = UUID("00000000-0000-4000-8000-000000000001")
 
     model_config = SettingsConfigDict(
         env_file=".env",
