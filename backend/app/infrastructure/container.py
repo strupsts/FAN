@@ -6,9 +6,9 @@ from pathlib import Path
 from app.adapters.outbound.analytics.in_memory_analytics_adapter import InMemoryAnalyticsAdapter
 from app.adapters.outbound.db.in_memory_repositories import (
     InMemoryPredictionRepository,
-    InMemoryReceiptRepository,
     InMemoryTrainingSampleRepository,
 )
+from app.adapters.outbound.db.sqlalchemy_receipt_repository import SQLAlchemyReceiptRepository
 from app.adapters.outbound.llm.fake_receipt_parser_adapter import FakeReceiptParserAdapter
 from app.adapters.outbound.ocr.fake_ocr_adapter import FakeOCRAdapter
 from app.adapters.outbound.privacy.noop_privacy_adapter import NoopPrivacyAdapter
@@ -19,6 +19,7 @@ from app.application import (
     GetSpendingSummaryUseCase,
     ProcessReceiptUseCase,
 )
+from app.infrastructure.database import create_db_engine, create_session_factory
 
 
 @dataclass
@@ -26,7 +27,7 @@ class AppContainer:
     image_storage: LocalImageStorageAdapter
     ocr: FakeOCRAdapter
     parser: FakeReceiptParserAdapter
-    receipt_repository: InMemoryReceiptRepository
+    receipt_repository: SQLAlchemyReceiptRepository
     prediction_repository: InMemoryPredictionRepository
     training_sample_repository: InMemoryTrainingSampleRepository
     analytics: InMemoryAnalyticsAdapter
@@ -42,10 +43,13 @@ def build_container() -> AppContainer:
     project_root = Path(__file__).resolve().parents[3]
     receipt_storage_dir = project_root / "storage" / "receipts"
 
+    engine = create_db_engine()
+    session_factory = create_session_factory(engine)
+
     image_storage = LocalImageStorageAdapter(base_dir=receipt_storage_dir)
     ocr = FakeOCRAdapter()
     parser = FakeReceiptParserAdapter()
-    receipt_repository = InMemoryReceiptRepository()
+    receipt_repository = SQLAlchemyReceiptRepository(session_factory=session_factory)
     prediction_repository = InMemoryPredictionRepository()
     training_sample_repository = InMemoryTrainingSampleRepository()
     analytics = InMemoryAnalyticsAdapter()
