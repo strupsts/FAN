@@ -17,6 +17,13 @@ if ! curl -fsS "${API_BASE_URL}/health" > /dev/null; then
   exit 1
 fi
 
+echo "Checking database health..."
+if ! curl -fsS "${API_BASE_URL}/health/db" > /dev/null; then
+  echo "Database is not available."
+  echo "Start Docker/Postgres with: make db-up"
+  exit 1
+fi
+
 echo "Processing receipt..."
 curl -fsS -X POST "${API_BASE_URL}/api/receipts/process" \
   -F "file=@${RECEIPT_IMAGE_PATH}" \

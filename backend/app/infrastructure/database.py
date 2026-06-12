@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Generator
 
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine, create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.adapters.outbound.db.sqlalchemy_models import Base
@@ -31,6 +32,18 @@ def create_session_factory(engine: Engine) -> sessionmaker[Session]:
 def create_all_tables(engine: Engine | None = None) -> None:
     engine = engine or create_db_engine()
     Base.metadata.create_all(bind=engine)
+
+
+def check_database_connection(engine: Engine | None = None) -> bool:
+    engine = engine or create_db_engine()
+
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("select 1"))
+    except SQLAlchemyError:
+        return False
+
+    return True
 
 
 def get_db_session() -> Generator[Session, None, None]:
