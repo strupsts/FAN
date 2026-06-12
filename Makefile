@@ -4,7 +4,7 @@ BACKEND_DIR := backend
 PYTHON := $(BACKEND_DIR)/.venv/bin/python
 PIP := $(PYTHON) -m pip
 
-.PHONY: help setup api db-up db-down db-logs db-init health process smoke status clean-pyc
+.PHONY: help setup api db-up db-down db-logs db-init health process api-e2e smoke status clean-pyc
 
 help:
 > @echo "F.A.N. dev commands:"
@@ -17,6 +17,7 @@ help:
 > @echo "  make db-init    Create database tables"
 > @echo "  make health     Check /health endpoint"
 > @echo "  make process    Send sample receipt to /api/receipts/process"
+> @echo "  make api-e2e    Run process-confirm-history-summary API check"
 > @echo "  make smoke      Run core smoke test without HTTP"
 > @echo "  make status     Show git status"
 > @echo "  make clean-pyc  Remove Python cache files"
@@ -47,6 +48,9 @@ health:
 process:
 > curl -X POST "http://127.0.0.1:8000/api/receipts/process" \
 >   -F "file=@data/test_receipt.jpg"
+
+api-e2e:
+> bash $(BACKEND_DIR)/scripts/api_e2e.sh
 
 smoke:
 > cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/python scripts/smoke.py
