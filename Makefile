@@ -4,7 +4,7 @@ BACKEND_DIR := backend
 PYTHON := $(BACKEND_DIR)/.venv/bin/python
 PIP := $(PYTHON) -m pip
 
-.PHONY: help setup api db-up db-down db-logs db-init db-clear health health-db llm-health llm-serve llm-parse process api-e2e api-e2e-clean smoke status clean-pyc
+.PHONY: help setup api db-up db-down db-logs db-init db-clear health health-db llm-health llm-serve llm-parse ocr-surya-setup ocr-surya-sample process api-e2e api-e2e-clean smoke status clean-pyc
 
 help:
 > @echo "F.A.N. dev commands:"
@@ -21,6 +21,8 @@ help:
 > @echo "  make llm-health Check vLLM /v1/models endpoint"
 > @echo "  make llm-serve  Start local vLLM Qwen3-8B-AWQ server"
 > @echo "  make llm-parse  Test vLLM receipt parser adapter"
+> @echo "  make ocr-surya-setup   Create/update local Surya OCR venv"
+> @echo "  make ocr-surya-sample  Run Surya OCR on data/test_receipt.jpg"
 > @echo "  make process    Send sample receipt to /api/receipts/process"
 > @echo "  make api-e2e    Run process-confirm-history-summary API check"
 > @echo "  make api-e2e-clean  Clear DB, then run API E2E check"
@@ -65,6 +67,12 @@ llm-serve:
 
 llm-parse:
 > cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/python scripts/test_vllm_parser.py
+
+ocr-surya-setup:
+> bash scripts/setup_surya.sh
+
+ocr-surya-sample:
+> bash scripts/run_surya_ocr_sample.sh
 
 process:
 > curl -X POST "http://127.0.0.1:8000/api/receipts/process" \
