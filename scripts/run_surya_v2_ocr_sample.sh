@@ -1,30 +1,52 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SURYA_VENV="${SURYA_VENV:-$HOME/.venvs/fan-surya}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/ml_runtime_env.sh"
+
+SURYA_V2_VENV="${SURYA_V2_VENV:-${ML_RUNTIME_DIR}/venvs/fan-surya-v2}"
 IMAGE_PATH="${IMAGE_PATH:-data/test_receipt.jpg}"
-OUTPUT_DIR="${OUTPUT_DIR:-/tmp/fan_surya_ocr}"
+OUTPUT_DIR="${OUTPUT_DIR:-/tmp/fan_surya_v2_ocr}"
 
 if [ ! -f "${IMAGE_PATH}" ]; then
   echo "Image not found: ${IMAGE_PATH}"
   exit 1
 fi
 
-source "${SURYA_VENV}/bin/activate"
+source "${SURYA_V2_VENV}/bin/activate"
 
 rm -rf "${OUTPUT_DIR}"
 mkdir -p "${OUTPUT_DIR}"
 
-echo "Running Surya OCR..."
+echo "Running Surya v2 OCR probe..."
 echo "Image: ${IMAGE_PATH}"
 echo "Output dir: ${OUTPUT_DIR}"
+
+START_TS="$(python - <<'PY'
+import time
+print(time.perf_counter())
+PY
+)"
 
 surya_ocr "${IMAGE_PATH}" \
   --output_dir "${OUTPUT_DIR}"
 
+END_TS="$(python - <<'PY'
+import time
+print(time.perf_counter())
+PY
+)"
+
 echo
-echo "Surya output files:"
-find "${OUTPUT_DIR}" -maxdepth 3 -type f -print
+python - <<PY
+start = float("${START_TS}")
+end = float("${END_TS}")
+print(f"Duration: {end - start:.2f}s")
+PY
+
+echo
+echo "Surya v2 output files:"
+find "${OUTPUT_DIR}" -maxdepth 4 -type f -print
 
 echo
 echo "Extracted text:"
@@ -36,7 +58,7 @@ import re
 from html import unescape
 from pathlib import Path
 
-output_dir = Path("/tmp/fan_surya_ocr")
+output_dir = Path("/tmp/fan_surya_v2_ocr")
 results_files = list(output_dir.rglob("results.json"))
 
 if not results_files:
@@ -72,5 +94,5 @@ for pages in data.values():
 
 print("\n".join(texts))
 print()
-print(f"Raw Surya results: {results_path}")
+print(f"Raw Surya v2 results: {results_path}")
 PY
