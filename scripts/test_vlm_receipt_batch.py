@@ -14,14 +14,14 @@ from typing import Any
 
 INPUT_DIR = Path(__import__("os").environ.get("INPUT_DIR", "data/receipt_samples"))
 IMAGE_PATH_ENV = __import__("os").environ.get("IMAGE_PATH")
-OUTPUT_ROOT = Path(__import__("os").environ.get("OUTPUT_ROOT", "/tmp/fan_vlm_qwen25vl7b_awq"))
+OUTPUT_ROOT = Path(__import__("os").environ.get("OUTPUT_ROOT", "/tmp/fan_vlm_receipts"))
 BASE_URL = __import__("os").environ.get("VLM_BASE_URL", "http://127.0.0.1:8002/v1")
 API_KEY = __import__("os").environ.get("VLM_API_KEY", "local-dev-key")
 MODEL = __import__("os").environ.get("VLM_MODEL", "local-vlm-receipt-parser")
 TIMEOUT_SECONDS = int(__import__("os").environ.get("VLM_TIMEOUT_SECONDS", "300"))
 START_COMMAND = __import__("os").environ.get(
     "VLM_START_COMMAND",
-    "make vlm-qwen25vl7b-serve",
+    "make vlm-serve",
 )
 SERVER_CHECK_TIMEOUT_SECONDS = int(__import__("os").environ.get("VLM_SERVER_CHECK_TIMEOUT_SECONDS", "3"))
 

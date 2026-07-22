@@ -10,7 +10,6 @@ from app.adapters.outbound.db.in_memory_repositories import (
 )
 from app.adapters.outbound.db.sqlalchemy_receipt_repository import SQLAlchemyReceiptRepository
 from app.adapters.outbound.llm.fake_receipt_parser_adapter import FakeReceiptParserAdapter
-from app.adapters.outbound.llm.vllm_receipt_parser_adapter import VLLMReceiptParserAdapter
 from app.adapters.outbound.ocr.fake_ocr_adapter import FakeOCRAdapter
 from app.adapters.outbound.privacy.noop_privacy_adapter import NoopPrivacyAdapter
 from app.adapters.outbound.storage.local_image_storage import LocalImageStorageAdapter
@@ -20,7 +19,6 @@ from app.application import (
     GetSpendingSummaryUseCase,
     ProcessReceiptUseCase,
 )
-from app.infrastructure.config import get_settings
 from app.infrastructure.database import create_db_engine, create_session_factory
 
 
@@ -28,7 +26,7 @@ from app.infrastructure.database import create_db_engine, create_session_factory
 class AppContainer:
     image_storage: LocalImageStorageAdapter
     ocr: FakeOCRAdapter
-    parser: FakeReceiptParserAdapter | VLLMReceiptParserAdapter
+    parser: FakeReceiptParserAdapter
     receipt_repository: SQLAlchemyReceiptRepository
     prediction_repository: InMemoryPredictionRepository
     training_sample_repository: InMemoryTrainingSampleRepository
@@ -42,7 +40,6 @@ class AppContainer:
 
 
 def build_container() -> AppContainer:
-    settings = get_settings()
     project_root = Path(__file__).resolve().parents[3]
     receipt_storage_dir = project_root / "storage" / "receipts"
 
@@ -50,18 +47,11 @@ def build_container() -> AppContainer:
     session_factory = create_session_factory(engine)
 
     image_storage = LocalImageStorageAdapter(base_dir=receipt_storage_dir)
+
+    # Temporary fallback until the direct VLM extractor is connected.
     ocr = FakeOCRAdapter()
-    if settings.receipt_parser_provider == "vllm":
-        parser = VLLMReceiptParserAdapter(
-            base_url=settings.vllm_base_url,
-            api_key=settings.vllm_api_key,
-            model=settings.vllm_model,
-            timeout_seconds=settings.vllm_timeout_seconds,
-            temperature=settings.vllm_temperature,
-            max_tokens=settings.vllm_max_tokens,
-        )
-    else:
-        parser = FakeReceiptParserAdapter()
+    parser = FakeReceiptParserAdapter()
+
     receipt_repository = SQLAlchemyReceiptRepository(session_factory=session_factory)
     prediction_repository = InMemoryPredictionRepository()
     training_sample_repository = InMemoryTrainingSampleRepository()
