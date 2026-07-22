@@ -29,5 +29,6 @@ vllm serve "${VLM_MODEL}" \
   --api-key "${VLM_API_KEY}" \
   --max-model-len "${VLM_MAX_MODEL_LEN}" \
   --gpu-memory-utilization "${VLM_GPU_MEMORY_UTILIZATION}" \
+  --limit-mm-per-prompt '{"image": 1, "video": 0}' \
   --max-num-seqs 1 \
   --generation-config vllm
