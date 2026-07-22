@@ -1,14 +1,20 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload, sessionmaker
 
-from app.adapters.outbound.db.sqlalchemy_models import ReceiptItemRow, ReceiptRow
+from app.adapters.outbound.db.sqlalchemy_models import (
+    ReceiptItemRow,
+    ReceiptPredictionRow,
+    ReceiptRow,
+    TrainingSampleRow,
+)
 from app.domain import (
     BudgetBucket,
     Category,
@@ -19,10 +25,19 @@ from app.domain import (
     ReceiptItem,
     SpendingSummary,
 )
-from app.ports import ReceiptRepositoryPort
+from app.ports import (
+    ReceiptConfirmationPort,
+    ReceiptDraftAlreadyConfirmedError,
+    ReceiptDraftNotFoundError,
+    ReceiptRepositoryPort,
+    TrainingSample,
+)
 
 
-class SQLAlchemyReceiptRepository(ReceiptRepositoryPort):
+class SQLAlchemyReceiptRepository(
+    ReceiptRepositoryPort,
+    ReceiptConfirmationPort,
+):
     def __init__(self, session_factory: sessionmaker[Session]) -> None:
         self.session_factory = session_factory
 
@@ -31,6 +46,84 @@ class SQLAlchemyReceiptRepository(ReceiptRepositoryPort):
             row = self._receipt_to_row(receipt)
             session.add(row)
             session.commit()
+
+    def confirm_prediction(
+        self,
+        *,
+        user_id: UUID,
+        receipt_draft_id: UUID,
+        receipt: ConfirmedReceipt,
+        target_payload: dict[str, Any],
+    ) -> TrainingSample:
+        if receipt.user_id != user_id:
+            raise ValueError(
+                "Receipt user must match confirmation user"
+            )
+
+        with self.session_factory() as session:
+            with session.begin():
+                statement = (
+                    select(ReceiptPredictionRow)
+                    .where(
+                        ReceiptPredictionRow.user_id == user_id,
+                        ReceiptPredictionRow.receipt_draft_id
+                        == receipt_draft_id,
+                    )
+                    .with_for_update()
+                )
+
+                prediction_row = session.scalar(statement)
+
+                if prediction_row is None:
+                    raise ReceiptDraftNotFoundError(
+                        "Receipt draft was not found"
+                    )
+
+                if prediction_row.confirmed_receipt_id is not None:
+                    raise ReceiptDraftAlreadyConfirmedError(
+                        "Receipt draft has already been confirmed"
+                    )
+
+                training_sample = TrainingSample(
+                    user_id=user_id,
+                    source_prediction_id=prediction_row.id,
+                    input_payload={
+                        "image_ref": prediction_row.image_ref,
+                        "extractor_name":
+                            prediction_row.extractor_name,
+                        "model_output":
+                            prediction_row.model_output,
+                    },
+                    target_payload=target_payload,
+                )
+
+                session.add(self._receipt_to_row(receipt))
+                session.flush()
+
+                session.add(
+                    TrainingSampleRow(
+                        id=training_sample.id,
+                        user_id=training_sample.user_id,
+                        source_prediction_id=(
+                            training_sample.source_prediction_id
+                        ),
+                        input_payload=(
+                            training_sample.input_payload
+                        ),
+                        target_payload=(
+                            training_sample.target_payload
+                        ),
+                        is_sanitized=(
+                            training_sample.is_sanitized
+                        ),
+                        created_at=training_sample.created_at,
+                    )
+                )
+
+                prediction_row.confirmed_receipt_id = receipt.id
+                prediction_row.confirmed_at = datetime.now(UTC)
+
+        return training_sample
 
     def list_receipts(self, user_id: UUID) -> list[ConfirmedReceipt]:
         with self.session_factory() as session:

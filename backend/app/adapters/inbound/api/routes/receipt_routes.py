@@ -20,6 +20,8 @@ from app.domain import Money
 from app.infrastructure import AppContainer, build_container, get_settings
 from app.ports import (
     InvalidReceiptImageError,
+    ReceiptDraftAlreadyConfirmedError,
+    ReceiptDraftNotFoundError,
     ReceiptExtractionError,
     ReceiptExtractorResponseError,
     ReceiptExtractorUnavailableError,
@@ -128,7 +130,20 @@ def confirm_receipt(
         items=[item.to_domain() for item in request.items],
     )
 
-    confirmed_receipt = container.confirm_receipt_use_case.execute(command)
+    try:
+        confirmed_receipt = (
+            container.confirm_receipt_use_case.execute(command)
+        )
+    except ReceiptDraftNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Receipt draft was not found.",
+        ) from error
+    except ReceiptDraftAlreadyConfirmedError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Receipt draft has already been confirmed.",
+        ) from error
 
     return receipt_to_response(confirmed_receipt)
 

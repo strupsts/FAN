@@ -6,6 +6,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    Boolean,
     JSON,
     DateTime,
     ForeignKey,
@@ -127,6 +128,10 @@ class ReceiptPredictionRow(Base):
             "receipt_draft_id",
             name="uq_receipt_predictions_user_draft",
         ),
+        UniqueConstraint(
+            "confirmed_receipt_id",
+            name="uq_receipt_predictions_confirmed_receipt",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(
@@ -139,9 +144,58 @@ class ReceiptPredictionRow(Base):
     image_ref: Mapped[str] = mapped_column(String(1000))
     extractor_name: Mapped[str] = mapped_column(String(255))
 
+    confirmed_receipt_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey(
+            "receipts.id",
+            ondelete="RESTRICT",
+            name="fk_receipt_predictions_confirmed_receipt",
+        ),
+        nullable=True,
+    )
+    confirmed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
     model_output: Mapped[dict[str, Any] | None] = mapped_column(
         JSON,
         nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True)
+    )
+
+
+
+class TrainingSampleRow(Base):
+    __tablename__ = "training_samples"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_prediction_id",
+            name="uq_training_samples_source_prediction",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+    user_id: Mapped[UUID] = mapped_column(index=True)
+    source_prediction_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "receipt_predictions.id",
+            ondelete="CASCADE",
+            name="fk_training_samples_source_prediction",
+        ),
+        nullable=False,
+    )
+
+    input_payload: Mapped[dict[str, Any]] = mapped_column(JSON)
+    target_payload: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+    is_sanitized: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True)

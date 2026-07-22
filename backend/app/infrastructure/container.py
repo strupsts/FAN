@@ -4,9 +4,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from app.adapters.outbound.analytics.in_memory_analytics_adapter import InMemoryAnalyticsAdapter
-from app.adapters.outbound.db.in_memory_repositories import (
-    InMemoryTrainingSampleRepository,
-)
 from app.adapters.outbound.db.sqlalchemy_prediction_repository import (
     SQLAlchemyPredictionRepository,
 )
@@ -36,7 +33,6 @@ class AppContainer:
     extractor: ReceiptDraftExtractorPort
     receipt_repository: SQLAlchemyReceiptRepository
     prediction_repository: SQLAlchemyPredictionRepository
-    training_sample_repository: InMemoryTrainingSampleRepository
     analytics: InMemoryAnalyticsAdapter
     privacy: NoopPrivacyAdapter
 
@@ -74,7 +70,6 @@ def build_container() -> AppContainer:
     prediction_repository = SQLAlchemyPredictionRepository(
         session_factory=session_factory
     )
-    training_sample_repository = InMemoryTrainingSampleRepository()
     analytics = InMemoryAnalyticsAdapter()
     privacy = NoopPrivacyAdapter()
 
@@ -86,7 +81,7 @@ def build_container() -> AppContainer:
     )
 
     confirm_receipt_use_case = ConfirmReceiptUseCase(
-        receipt_repository=receipt_repository,
+        confirmation_repository=receipt_repository,
         analytics=analytics,
     )
 
@@ -104,7 +99,6 @@ def build_container() -> AppContainer:
         extractor=extractor,
         receipt_repository=receipt_repository,
         prediction_repository=prediction_repository,
-        training_sample_repository=training_sample_repository,
         analytics=analytics,
         privacy=privacy,
         process_receipt_use_case=process_receipt_use_case,

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.domain.category import BudgetBucket, Category
@@ -78,7 +78,9 @@ class ConfirmedReceipt:
     subtotal: Money | None = None
     tax: Money | None = None
     image_ref: str | None = None
-    confirmed_at: datetime = field(default_factory=datetime.utcnow)
+    confirmed_at: datetime = field(
+        default_factory=lambda: datetime.now(UTC).replace(tzinfo=None)
+    )
 
     def __post_init__(self) -> None:
         if not self.items:

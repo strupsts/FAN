@@ -59,6 +59,10 @@ class SQLAlchemyPredictionRepository(PredictionRepositoryPort):
             receipt_draft_id=prediction.receipt_draft_id,
             image_ref=prediction.image_ref,
             extractor_name=prediction.extractor_name,
+            confirmed_receipt_id=(
+                prediction.confirmed_receipt_id
+            ),
+            confirmed_at=prediction.confirmed_at,
             model_output=prediction.model_output,
             created_at=prediction.created_at,
         )
@@ -73,6 +77,8 @@ class SQLAlchemyPredictionRepository(PredictionRepositoryPort):
             receipt_draft_id=row.receipt_draft_id,
             image_ref=row.image_ref,
             extractor_name=row.extractor_name,
+            confirmed_receipt_id=row.confirmed_receipt_id,
+            confirmed_at=row.confirmed_at,
             model_output=row.model_output,
             created_at=row.created_at,
         )

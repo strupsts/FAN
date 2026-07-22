@@ -13,6 +13,8 @@ class ReceiptPredictionRecord:
     image_ref: str
     extractor_name: str
     model_output: dict[str, Any] | None = None
+    confirmed_receipt_id: UUID | None = None
+    confirmed_at: datetime | None = None
     id: UUID = field(default_factory=uuid4)
     created_at: datetime = field(
         default_factory=lambda: datetime.now(UTC)
@@ -20,10 +22,23 @@ class ReceiptPredictionRecord:
 
     def __post_init__(self) -> None:
         if not self.image_ref.strip():
-            raise ValueError("Prediction image_ref must not be empty")
+            raise ValueError(
+                "Prediction image_ref must not be empty"
+            )
 
         if not self.extractor_name.strip():
-            raise ValueError("Prediction extractor_name must not be empty")
+            raise ValueError(
+                "Prediction extractor_name must not be empty"
+            )
+
+        has_receipt = self.confirmed_receipt_id is not None
+        has_timestamp = self.confirmed_at is not None
+
+        if has_receipt != has_timestamp:
+            raise ValueError(
+                "Prediction confirmation ID and timestamp "
+                "must be set together"
+            )
 
 
 class PredictionRepositoryPort(Protocol):
