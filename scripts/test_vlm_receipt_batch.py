@@ -19,6 +19,10 @@ BASE_URL = __import__("os").environ.get("VLM_BASE_URL", "http://127.0.0.1:8002/v
 API_KEY = __import__("os").environ.get("VLM_API_KEY", "local-dev-key")
 MODEL = __import__("os").environ.get("VLM_MODEL", "local-vlm-receipt-parser")
 TIMEOUT_SECONDS = int(__import__("os").environ.get("VLM_TIMEOUT_SECONDS", "300"))
+START_COMMAND = __import__("os").environ.get(
+    "VLM_START_COMMAND",
+    "make vlm-qwen25vl7b-serve",
+)
 SERVER_CHECK_TIMEOUT_SECONDS = int(__import__("os").environ.get("VLM_SERVER_CHECK_TIMEOUT_SECONDS", "3"))
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
@@ -111,7 +115,7 @@ def check_vlm_server() -> None:
             f"Tried: {url}\n"
             f"Error: {error}\n\n"
             "Start it first in another terminal:\n"
-            "make vlm-qwen25vl7b-serve"
+            f"{START_COMMAND}"
         ) from error
 
 
