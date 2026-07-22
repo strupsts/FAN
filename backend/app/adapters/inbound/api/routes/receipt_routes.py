@@ -54,7 +54,7 @@ async def process_receipt(
 
     if not image_bytes:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Uploaded receipt image is empty.",
         )
 
@@ -72,7 +72,7 @@ async def process_receipt(
         )
     except InvalidReceiptImageError as error:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Uploaded file is not a supported receipt image.",
         ) from error
     except ReceiptExtractorUnavailableError as error:
