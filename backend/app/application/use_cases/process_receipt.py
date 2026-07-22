@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import replace
 
 from app.application.commands import ProcessReceiptCommand
@@ -12,6 +13,9 @@ from app.ports import (
     ReceiptDraftExtractorPort,
     ReceiptPredictionRecord,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class ProcessReceiptUseCase:
@@ -35,12 +39,23 @@ class ProcessReceiptUseCase:
             content_type=command.content_type,
         )
 
-        extraction = self.extractor.extract_receipt(
-            image_bytes=command.image_bytes,
-            original_filename=command.original_filename,
-            content_type=command.content_type,
-            image_ref=stored_image.image_ref,
-        )
+        try:
+            extraction = self.extractor.extract_receipt(
+                image_bytes=command.image_bytes,
+                original_filename=command.original_filename,
+                content_type=command.content_type,
+                image_ref=stored_image.image_ref,
+            )
+        except Exception:
+            try:
+                self.image_storage.delete(stored_image.image_ref)
+            except Exception:
+                logger.exception(
+                    "Failed to delete receipt image after extraction failure",
+                    extra={"image_ref": stored_image.image_ref},
+                )
+
+            raise
 
         receipt_draft = replace(
             extraction.draft,

@@ -3,7 +3,8 @@ from __future__ import annotations
 from datetime import date
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from starlette.concurrency import run_in_threadpool
 
 from app.adapters.inbound.api.routes.receipt_schemas import (
     ConfirmReceiptRequest,
@@ -17,6 +18,13 @@ from app.adapters.inbound.api.routes.receipt_schemas import (
 from app.application import ConfirmReceiptCommand, ProcessReceiptCommand
 from app.domain import Money
 from app.infrastructure import AppContainer, build_container, get_settings
+from app.ports import (
+    InvalidReceiptImageError,
+    ReceiptExtractionError,
+    ReceiptExtractorResponseError,
+    ReceiptExtractorUnavailableError,
+)
+
 
 router = APIRouter(prefix="/api/receipts", tags=["receipts"])
 
@@ -42,6 +50,12 @@ async def process_receipt(
 ) -> ReceiptDraftResponse:
     image_bytes = await file.read()
 
+    if not image_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Uploaded receipt image is empty.",
+        )
+
     command = ProcessReceiptCommand(
         user_id=user_id,
         image_bytes=image_bytes,
@@ -49,7 +63,32 @@ async def process_receipt(
         content_type=file.content_type,
     )
 
-    draft = container.process_receipt_use_case.execute(command)
+    try:
+        draft = await run_in_threadpool(
+            container.process_receipt_use_case.execute,
+            command,
+        )
+    except InvalidReceiptImageError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Uploaded file is not a supported receipt image.",
+        ) from error
+    except ReceiptExtractorUnavailableError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Receipt extraction service is temporarily unavailable.",
+            headers={"Retry-After": "5"},
+        ) from error
+    except ReceiptExtractorResponseError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Receipt extraction service returned an invalid response.",
+        ) from error
+    except ReceiptExtractionError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Receipt extraction failed.",
+        ) from error
 
     return receipt_draft_to_response(draft)
 

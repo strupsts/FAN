@@ -3,7 +3,6 @@ from __future__ import annotations
 import base64
 import json
 import math
-import mimetypes
 import re
 import urllib.error
 import urllib.request
@@ -13,7 +12,14 @@ from typing import Any
 
 from app.domain import BudgetBucket, Category, Money, ReceiptDraft, ReceiptItem
 from app.domain.category import default_bucket_for_category
-from app.ports import ReceiptDraftExtractorPort, ReceiptExtractionResult
+from app.ports import (
+    InvalidReceiptImageError,
+    ReceiptDraftExtractorPort,
+    ReceiptExtractionError,
+    ReceiptExtractionResult,
+    ReceiptExtractorResponseError,
+    ReceiptExtractorUnavailableError,
+)
 
 
 SYSTEM_PROMPT = """You are a receipt image parser.
@@ -107,33 +113,40 @@ class QwenVLMReceiptDraftExtractorAdapter(ReceiptDraftExtractorPort):
         image_ref: str | None = None,
     ) -> ReceiptExtractionResult:
         if not image_bytes:
-            raise ValueError("image_bytes must not be empty")
+            raise InvalidReceiptImageError("Receipt image is empty")
 
-        raw_content, response_json = self._request_completion(
-            image_bytes=image_bytes,
-            original_filename=original_filename,
-            content_type=content_type,
-        )
+        try:
+            raw_content, response_json = self._request_completion(
+                image_bytes=image_bytes,
+                original_filename=original_filename,
+                content_type=content_type,
+            )
 
-        parsed_json = self._extract_json(raw_content)
+            parsed_json = self._extract_json(raw_content)
 
-        draft = self._to_receipt_draft(
-            parsed_json=parsed_json,
-            image_ref=image_ref,
-        )
+            draft = self._to_receipt_draft(
+                parsed_json=parsed_json,
+                image_ref=image_ref,
+            )
 
-        model_output: dict[str, Any] = {
-            "parsed": parsed_json,
-            "raw_content": raw_content,
-            "model": response_json.get("model"),
-            "usage": response_json.get("usage"),
-        }
+            model_output: dict[str, Any] = {
+                "parsed": parsed_json,
+                "raw_content": raw_content,
+                "model": response_json.get("model"),
+                "usage": response_json.get("usage"),
+            }
 
-        return ReceiptExtractionResult(
-            draft=draft,
-            extractor_name=self.extractor_name,
-            model_output=model_output,
-        )
+            return ReceiptExtractionResult(
+                draft=draft,
+                extractor_name=self.extractor_name,
+                model_output=model_output,
+            )
+        except ReceiptExtractionError:
+            raise
+        except Exception as error:
+            raise ReceiptExtractorResponseError(
+                "Failed to convert VLM output into a receipt draft"
+            ) from error
 
     def _request_completion(
         self,
@@ -191,11 +204,24 @@ class QwenVLMReceiptDraftExtractorAdapter(ReceiptDraftExtractorPort):
                 body = response.read().decode("utf-8")
         except urllib.error.HTTPError as error:
             error_body = error.read().decode("utf-8", errors="replace")
-            raise RuntimeError(
+
+            if error.code == 400 and "failed to load image" in error_body.lower():
+                raise InvalidReceiptImageError(
+                    "VLM could not decode the receipt image"
+                ) from error
+
+            if error.code == 429 or 500 <= error.code <= 599:
+                raise ReceiptExtractorUnavailableError(
+                    f"VLM service returned HTTP {error.code}"
+                ) from error
+
+            raise ReceiptExtractorResponseError(
                 f"VLM request failed with HTTP {error.code}: {error_body}"
             ) from error
-        except urllib.error.URLError as error:
-            raise RuntimeError(f"VLM request failed: {error}") from error
+        except (urllib.error.URLError, TimeoutError) as error:
+            raise ReceiptExtractorUnavailableError(
+                f"VLM service is unavailable: {error}"
+            ) from error
 
         try:
             response_json = json.loads(body)
@@ -237,32 +263,27 @@ class QwenVLMReceiptDraftExtractorAdapter(ReceiptDraftExtractorPort):
         original_filename: str | None,
         content_type: str | None,
     ) -> str:
-        mime_type = self._resolve_mime_type(
-            original_filename=original_filename,
-            content_type=content_type,
-        )
-
+        mime_type = self._detect_image_mime_type(image_bytes)
         encoded = base64.b64encode(image_bytes).decode("ascii")
         return f"data:{mime_type};base64,{encoded}"
 
-    def _resolve_mime_type(
-        self,
-        *,
-        original_filename: str | None,
-        content_type: str | None,
-    ) -> str:
-        normalized_content_type = (content_type or "").split(";", maxsplit=1)[0]
-        normalized_content_type = normalized_content_type.strip().lower()
+    def _detect_image_mime_type(self, image_bytes: bytes) -> str:
+        if image_bytes.startswith(b"\xff\xd8\xff"):
+            return "image/jpeg"
 
-        if normalized_content_type.startswith("image/"):
-            return normalized_content_type
+        if image_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+            return "image/png"
 
-        guessed_type = mimetypes.guess_type(original_filename or "")[0]
+        if (
+            len(image_bytes) >= 12
+            and image_bytes[:4] == b"RIFF"
+            and image_bytes[8:12] == b"WEBP"
+        ):
+            return "image/webp"
 
-        if guessed_type and guessed_type.startswith("image/"):
-            return guessed_type
-
-        return "image/jpeg"
+        raise InvalidReceiptImageError(
+            "Unsupported or invalid image. Supported formats: JPEG, PNG, WEBP"
+        )
 
     def _extract_json(self, raw_content: str) -> dict[str, Any]:
         content = raw_content.strip()

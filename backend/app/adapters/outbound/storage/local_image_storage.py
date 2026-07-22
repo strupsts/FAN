@@ -42,8 +42,22 @@ class LocalImageStorageAdapter(ImageStoragePort):
 
     def delete(self, image_ref: str) -> None:
         path = self.resolve_path(image_ref)
-        if path.exists():
-            path.unlink()
+
+        if not path.exists():
+            return
+
+        path.unlink()
+
+        base_dir = self.base_dir.resolve()
+        parent = path.parent
+
+        while parent.resolve() != base_dir:
+            try:
+                parent.rmdir()
+            except OSError:
+                break
+
+            parent = parent.parent
 
     def resolve_path(self, image_ref: str) -> Path:
         prefix = "local://receipts/"

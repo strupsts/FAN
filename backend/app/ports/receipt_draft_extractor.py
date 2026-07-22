@@ -6,6 +6,22 @@ from typing import Any, Protocol
 from app.domain.receipt import ReceiptDraft
 
 
+class ReceiptExtractionError(RuntimeError):
+    """Base error for receipt extraction failures."""
+
+
+class InvalidReceiptImageError(ReceiptExtractionError):
+    """Uploaded bytes are empty or are not a supported image."""
+
+
+class ReceiptExtractorUnavailableError(ReceiptExtractionError):
+    """External receipt extraction service is temporarily unavailable."""
+
+
+class ReceiptExtractorResponseError(ReceiptExtractionError):
+    """Receipt extractor returned an invalid or unusable response."""
+
+
 @dataclass(frozen=True)
 class ReceiptExtractionResult:
     draft: ReceiptDraft
