@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from app.application.commands import ProcessReceiptCommand
 from app.domain.receipt import ReceiptDraft
 from app.ports import (
     AnalyticsEvent,
     AnalyticsPort,
     ImageStoragePort,
-    OCRPort,
     PredictionRepositoryPort,
-    ReceiptParserPort,
+    ReceiptDraftExtractorPort,
     ReceiptPredictionRecord,
 )
 
@@ -17,14 +18,12 @@ class ProcessReceiptUseCase:
     def __init__(
         self,
         image_storage: ImageStoragePort,
-        ocr: OCRPort,
-        parser: ReceiptParserPort,
+        extractor: ReceiptDraftExtractorPort,
         prediction_repository: PredictionRepositoryPort,
         analytics: AnalyticsPort,
     ) -> None:
         self.image_storage = image_storage
-        self.ocr = ocr
-        self.parser = parser
+        self.extractor = extractor
         self.prediction_repository = prediction_repository
         self.analytics = analytics
 
@@ -36,21 +35,28 @@ class ProcessReceiptUseCase:
             content_type=command.content_type,
         )
 
-        ocr_result = self.ocr.extract_text(stored_image.image_ref)
-
-        receipt_draft = self.parser.parse_receipt(
-            ocr_result=ocr_result,
+        extraction = self.extractor.extract_receipt(
+            image_bytes=command.image_bytes,
+            original_filename=command.original_filename,
+            content_type=command.content_type,
             image_ref=stored_image.image_ref,
+        )
+
+        receipt_draft = replace(
+            extraction.draft,
+            user_id=command.user_id,
+            image_ref=stored_image.image_ref,
+            parser_name=extraction.extractor_name,
         )
 
         prediction = ReceiptPredictionRecord(
             user_id=command.user_id,
             receipt_draft_id=receipt_draft.id,
             image_ref=stored_image.image_ref,
-            ocr_engine=ocr_result.engine_name,
-            parser_name=receipt_draft.parser_name,
-            raw_ocr_text=ocr_result.full_text,
-            model_output=None,
+            ocr_engine=None,
+            parser_name=extraction.extractor_name,
+            raw_ocr_text=None,
+            model_output=extraction.model_output,
         )
         self.prediction_repository.save_prediction(prediction)
 
@@ -59,8 +65,7 @@ class ProcessReceiptUseCase:
                 name="receipt_processed",
                 user_id=command.user_id,
                 properties={
-                    "ocr_engine": ocr_result.engine_name,
-                    "parser_name": receipt_draft.parser_name,
+                    "extractor_name": extraction.extractor_name,
                     "item_count": len(receipt_draft.items),
                     "has_total_mismatch": receipt_draft.has_total_mismatch(),
                 },

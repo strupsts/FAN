@@ -9,8 +9,7 @@ from app.adapters.outbound.db.in_memory_repositories import (
     InMemoryTrainingSampleRepository,
 )
 from app.adapters.outbound.db.sqlalchemy_receipt_repository import SQLAlchemyReceiptRepository
-from app.adapters.outbound.llm.fake_receipt_parser_adapter import FakeReceiptParserAdapter
-from app.adapters.outbound.ocr.fake_ocr_adapter import FakeOCRAdapter
+from app.adapters.outbound.extraction import FakeReceiptDraftExtractorAdapter
 from app.adapters.outbound.privacy.noop_privacy_adapter import NoopPrivacyAdapter
 from app.adapters.outbound.storage.local_image_storage import LocalImageStorageAdapter
 from app.application import (
@@ -25,8 +24,7 @@ from app.infrastructure.database import create_db_engine, create_session_factory
 @dataclass
 class AppContainer:
     image_storage: LocalImageStorageAdapter
-    ocr: FakeOCRAdapter
-    parser: FakeReceiptParserAdapter
+    extractor: FakeReceiptDraftExtractorAdapter
     receipt_repository: SQLAlchemyReceiptRepository
     prediction_repository: InMemoryPredictionRepository
     training_sample_repository: InMemoryTrainingSampleRepository
@@ -48,9 +46,8 @@ def build_container() -> AppContainer:
 
     image_storage = LocalImageStorageAdapter(base_dir=receipt_storage_dir)
 
-    # Temporary fallback until the direct VLM extractor is connected.
-    ocr = FakeOCRAdapter()
-    parser = FakeReceiptParserAdapter()
+    # Temporary implementation until Qwen VLM is connected.
+    extractor = FakeReceiptDraftExtractorAdapter()
 
     receipt_repository = SQLAlchemyReceiptRepository(session_factory=session_factory)
     prediction_repository = InMemoryPredictionRepository()
@@ -60,8 +57,7 @@ def build_container() -> AppContainer:
 
     process_receipt_use_case = ProcessReceiptUseCase(
         image_storage=image_storage,
-        ocr=ocr,
-        parser=parser,
+        extractor=extractor,
         prediction_repository=prediction_repository,
         analytics=analytics,
     )
@@ -82,8 +78,7 @@ def build_container() -> AppContainer:
 
     return AppContainer(
         image_storage=image_storage,
-        ocr=ocr,
-        parser=parser,
+        extractor=extractor,
         receipt_repository=receipt_repository,
         prediction_repository=prediction_repository,
         training_sample_repository=training_sample_repository,
