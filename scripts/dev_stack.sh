@@ -314,10 +314,10 @@ action_up() {
 
   wait_for_database
 
-  log "Creating missing database tables..."
+  log "Applying database migrations..."
   (
     cd "${ROOT_DIR}/backend"
-    PYTHONPATH=. .venv/bin/python scripts/init_db.py
+    PYTHONPATH=. .venv/bin/alembic upgrade head
   )
 
   start_vlm

@@ -8,6 +8,7 @@ dependencies = [
     "uvicorn[standard]>=0.30.0",
     "python-multipart>=0.0.9",
     "SQLAlchemy>=2.0.0",
+    "alembic>=1.18.0,<2.0.0",
     "psycopg[binary]>=3.2.0",
     "pydantic-settings>=2.6.0",
 ]

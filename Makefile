@@ -4,7 +4,7 @@ BACKEND_DIR := backend
 PYTHON := $(BACKEND_DIR)/.venv/bin/python
 PIP := $(PYTHON) -m pip
 
-.PHONY: help setup api db-up db-down db-logs db-init db-clear health health-db vlm-health vlm-serve vlm-sample process api-e2e api-e2e-clean test smoke status clean-pyc dev dev-down dev-status dev-logs
+.PHONY: help setup api db-up db-down db-logs db-clear health health-db vlm-health vlm-serve vlm-sample process api-e2e api-e2e-clean test smoke status clean-pyc dev dev-down dev-status dev-logs db-upgrade db-downgrade db-current db-check db-revision db-stamp
 
 help:
 > @echo "F.A.N. dev commands:"
@@ -18,7 +18,12 @@ help:
 > @echo "  make db-up      Start Postgres"
 > @echo "  make db-down    Stop Postgres"
 > @echo "  make db-logs    Show Postgres logs"
-> @echo "  make db-init    Create database tables"
+> @echo "  make db-upgrade Apply pending database migrations"
+> @echo "  make db-downgrade Revert the latest database migration"
+> @echo "  make db-current Show the current database revision"
+> @echo "  make db-check   Check ORM models for ungenerated changes"
+> @echo "  make db-revision MESSAGE=\"...\"  Generate a migration"
+> @echo "  make db-stamp   Mark an existing schema as current (bootstrap only)"
 > @echo "  make db-clear   Delete dev receipt data from database"
 > @echo "  make health     Check /health endpoint"
 > @echo "  make health-db  Check /health/db endpoint"
@@ -64,8 +69,24 @@ db-down:
 db-logs:
 > docker compose logs -f db
 
-db-init:
-> cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/python scripts/init_db.py
+db-upgrade:
+> cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/alembic upgrade head
+
+db-downgrade:
+> cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/alembic downgrade -1
+
+db-current:
+> cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/alembic current
+
+db-check:
+> cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/alembic check
+
+db-revision:
+> @test -n "$(MESSAGE)" || (echo 'Usage: make db-revision MESSAGE="describe change"' && exit 2)
+> cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/alembic revision --autogenerate -m "$(MESSAGE)"
+
+db-stamp:
+> cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/alembic stamp head
 
 db-clear:
 > cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/python scripts/clear_db.py

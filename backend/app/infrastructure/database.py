@@ -6,7 +6,6 @@ from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.adapters.outbound.db.sqlalchemy_models import Base
 from app.infrastructure.config import Settings, get_settings
 
 
@@ -27,11 +26,6 @@ def create_session_factory(engine: Engine) -> sessionmaker[Session]:
         autocommit=False,
         expire_on_commit=False,
     )
-
-
-def create_all_tables(engine: Engine | None = None) -> None:
-    engine = engine or create_db_engine()
-    Base.metadata.create_all(bind=engine)
 
 
 def check_database_connection(engine: Engine | None = None) -> bool:
