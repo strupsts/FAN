@@ -4,11 +4,15 @@ BACKEND_DIR := backend
 PYTHON := $(BACKEND_DIR)/.venv/bin/python
 PIP := $(PYTHON) -m pip
 
-.PHONY: help setup api db-up db-down db-logs db-init db-clear health health-db vlm-health vlm-serve vlm-sample process api-e2e api-e2e-clean test smoke status clean-pyc
+.PHONY: help setup api db-up db-down db-logs db-init db-clear health health-db vlm-health vlm-serve vlm-sample process api-e2e api-e2e-clean test smoke status clean-pyc dev dev-down dev-status dev-logs
 
 help:
 > @echo "F.A.N. dev commands:"
 > @echo ""
+> @echo "  make dev        Start the full development stack"
+> @echo "  make dev-down   Stop the full development stack"
+> @echo "  make dev-status Show development stack status"
+> @echo "  make dev-logs   Follow API and VLM logs"
 > @echo "  make setup      Create/update WSL backend venv and install dependencies"
 > @echo "  make api        Start FastAPI dev server"
 > @echo "  make db-up      Start Postgres"
@@ -28,6 +32,20 @@ help:
 > @echo "  make smoke      Run core smoke test without HTTP"
 > @echo "  make status     Show git status"
 > @echo "  make clean-pyc  Remove Python cache files"
+
+dev:
+> bash scripts/dev_stack.sh up
+
+dev-down:
+> bash scripts/dev_stack.sh down
+
+dev-status:
+> bash scripts/dev_stack.sh status
+
+dev-logs:
+> @mkdir -p .runtime/logs
+> @touch .runtime/logs/api.log .runtime/logs/vlm.log
+> tail -n 100 -F .runtime/logs/vlm.log .runtime/logs/api.log
 
 setup:
 > python3 -m venv $(BACKEND_DIR)/.venv

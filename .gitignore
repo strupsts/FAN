@@ -48,3 +48,6 @@ outputs/
 # Local receipt samples / private test images
 data/receipt_samples/*
 !data/receipt_samples/.gitkeep
+
+# Local development runtime
+.runtime/
