@@ -74,7 +74,7 @@ api-e2e-clean:
 > $(MAKE) api-e2e
 
 smoke:
-> cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/python scripts/smoke.py
+> cd $(BACKEND_DIR) && RECEIPT_EXTRACTION_PROVIDER=fake PYTHONPATH=. .venv/bin/python scripts/smoke.py
 
 status:
 > git status

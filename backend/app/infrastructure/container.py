@@ -9,7 +9,10 @@ from app.adapters.outbound.db.in_memory_repositories import (
     InMemoryTrainingSampleRepository,
 )
 from app.adapters.outbound.db.sqlalchemy_receipt_repository import SQLAlchemyReceiptRepository
-from app.adapters.outbound.extraction import FakeReceiptDraftExtractorAdapter
+from app.adapters.outbound.extraction import (
+    FakeReceiptDraftExtractorAdapter,
+    QwenVLMReceiptDraftExtractorAdapter,
+)
 from app.adapters.outbound.privacy.noop_privacy_adapter import NoopPrivacyAdapter
 from app.adapters.outbound.storage.local_image_storage import LocalImageStorageAdapter
 from app.application import (
@@ -18,13 +21,15 @@ from app.application import (
     GetSpendingSummaryUseCase,
     ProcessReceiptUseCase,
 )
+from app.infrastructure.config import get_settings
 from app.infrastructure.database import create_db_engine, create_session_factory
+from app.ports import ReceiptDraftExtractorPort
 
 
 @dataclass
 class AppContainer:
     image_storage: LocalImageStorageAdapter
-    extractor: FakeReceiptDraftExtractorAdapter
+    extractor: ReceiptDraftExtractorPort
     receipt_repository: SQLAlchemyReceiptRepository
     prediction_repository: InMemoryPredictionRepository
     training_sample_repository: InMemoryTrainingSampleRepository
@@ -38,6 +43,7 @@ class AppContainer:
 
 
 def build_container() -> AppContainer:
+    settings = get_settings()
     project_root = Path(__file__).resolve().parents[3]
     receipt_storage_dir = project_root / "storage" / "receipts"
 
@@ -46,10 +52,21 @@ def build_container() -> AppContainer:
 
     image_storage = LocalImageStorageAdapter(base_dir=receipt_storage_dir)
 
-    # Temporary implementation until Qwen VLM is connected.
-    extractor = FakeReceiptDraftExtractorAdapter()
+    if settings.receipt_extraction_provider == "vlm":
+        extractor: ReceiptDraftExtractorPort = QwenVLMReceiptDraftExtractorAdapter(
+            base_url=settings.vlm_base_url,
+            api_key=settings.vlm_api_key,
+            model=settings.vlm_model,
+            timeout_seconds=settings.vlm_timeout_seconds,
+            temperature=settings.vlm_temperature,
+            max_tokens=settings.vlm_max_tokens,
+        )
+    else:
+        extractor = FakeReceiptDraftExtractorAdapter()
 
-    receipt_repository = SQLAlchemyReceiptRepository(session_factory=session_factory)
+    receipt_repository = SQLAlchemyReceiptRepository(
+        session_factory=session_factory
+    )
     prediction_repository = InMemoryPredictionRepository()
     training_sample_repository = InMemoryTrainingSampleRepository()
     analytics = InMemoryAnalyticsAdapter()
