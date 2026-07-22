@@ -16,8 +16,12 @@ class ConfirmReceiptCommand:
     total: Money
     merchant_name: str | None = None
     purchased_at: datetime | None = None
+    subtotal: Money | None = None
+    tax: Money | None = None
     image_ref: str | None = None
 
     def __post_init__(self) -> None:
         if not self.items:
-            raise ValueError("Confirmed receipt must contain at least one item")
+            raise ValueError(
+                "Confirmed receipt must contain at least one item"
+            )

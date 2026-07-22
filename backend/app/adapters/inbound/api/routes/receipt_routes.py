@@ -104,6 +104,22 @@ def confirm_receipt(
         draft_id=request.draft_id,
         merchant_name=request.merchant_name,
         purchased_at=request.purchased_at,
+        subtotal=(
+            Money(
+                amount=request.subtotal_amount,
+                currency=request.subtotal_currency,
+            )
+            if request.subtotal_amount is not None
+            else None
+        ),
+        tax=(
+            Money(
+                amount=request.tax_amount,
+                currency=request.tax_currency,
+            )
+            if request.tax_amount is not None
+            else None
+        ),
         image_ref=request.image_ref,
         total=Money(
             amount=request.total_amount,

@@ -37,8 +37,7 @@ class ReceiptDraft:
     tax: Money | None = None
     total: Money | None = None
     image_ref: str | None = None
-    raw_ocr_text: str | None = None
-    parser_name: str | None = None
+    extractor_name: str | None = None
 
     def __post_init__(self) -> None:
         if not self.items:
@@ -49,16 +48,22 @@ class ReceiptDraft:
             return Money.zero()
 
         result = Money.zero(self.items[0].total_price.currency)
+
         for item in self.items:
             result = result + item.total_price
+
         return result
 
-    def has_total_mismatch(self, tolerance: Money | None = None) -> bool:
+    def has_total_mismatch(
+        self,
+        tolerance: Money | None = None,
+    ) -> bool:
         if self.total is None:
             return False
 
         tolerance = tolerance or Money("0.05", self.total.currency)
         difference = self.items_total() - self.total
+
         return abs(difference.amount) > tolerance.amount
 
 
@@ -70,12 +75,18 @@ class ConfirmedReceipt:
     purchased_at: datetime | None
     items: list[ReceiptItem]
     total: Money
+    subtotal: Money | None = None
+    tax: Money | None = None
     image_ref: str | None = None
     confirmed_at: datetime = field(default_factory=datetime.utcnow)
 
     def __post_init__(self) -> None:
         if not self.items:
-            raise ValueError("Confirmed receipt must contain at least one item")
+            raise ValueError(
+                "Confirmed receipt must contain at least one item"
+            )
 
         if self.total.amount < 0:
-            raise ValueError("Confirmed receipt total cannot be negative")
+            raise ValueError(
+                "Confirmed receipt total cannot be negative"
+            )

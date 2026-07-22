@@ -38,6 +38,24 @@ class ReceiptRow(Base):
         DateTime(timezone=False),
         nullable=True,
     )
+
+    subtotal_amount: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2),
+        nullable=True,
+    )
+    subtotal_currency: Mapped[str | None] = mapped_column(
+        String(3),
+        nullable=True,
+    )
+    tax_amount: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2),
+        nullable=True,
+    )
+    tax_currency: Mapped[str | None] = mapped_column(
+        String(3),
+        nullable=True,
+    )
+
     total_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     total_currency: Mapped[str] = mapped_column(
         String(3),

@@ -30,10 +30,15 @@ class ReceiptItemRequest(BaseModel):
     quantity: float | None = None
     unit_price_amount: str | None = None
     unit_price_currency: str = "CAD"
-    confidence: float | None = Field(default=None, ge=0, le=1)
+    confidence: float | None = Field(
+        default=None,
+        ge=0,
+        le=1,
+    )
 
     def to_domain(self) -> ReceiptItem:
         unit_price = None
+
         if self.unit_price_amount is not None:
             unit_price = Money(
                 amount=self.unit_price_amount,
@@ -59,9 +64,15 @@ class ConfirmReceiptRequest(BaseModel):
     merchant_name: str | None = None
     purchased_at: datetime | None = None
     image_ref: str | None = None
+
+    subtotal_amount: str | None = None
+    subtotal_currency: str = "CAD"
+    tax_amount: str | None = None
+    tax_currency: str = "CAD"
+
     total_amount: str
     total_currency: str = "CAD"
-    items: list[ReceiptItemRequest]
+    items: list[ReceiptItemRequest] = Field(min_length=1)
 
 
 class ReceiptItemResponse(BaseModel):
@@ -70,15 +81,19 @@ class ReceiptItemResponse(BaseModel):
     category: str
     bucket: str
     quantity: float | None = None
+    unit_price: MoneyResponse | None = None
     confidence: float | None = None
 
 
 class ReceiptDraftResponse(BaseModel):
     id: str
     merchant_name: str | None
+    purchased_at: datetime | None
+    subtotal: MoneyResponse | None
+    tax: MoneyResponse | None
     total: MoneyResponse | None
     image_ref: str | None
-    parser_name: str | None
+    extractor_name: str | None
     items: list[ReceiptItemResponse]
 
 
@@ -86,7 +101,9 @@ class ReceiptResponse(BaseModel):
     id: str
     user_id: str
     merchant_name: str | None
-    purchased_at: str | None
+    purchased_at: datetime | None
+    subtotal: MoneyResponse | None
+    tax: MoneyResponse | None
     total: MoneyResponse
     image_ref: str | None
     items: list[ReceiptItemResponse]
@@ -119,6 +136,15 @@ def money_to_response(money: Money) -> MoneyResponse:
     )
 
 
+def optional_money_to_response(
+    money: Money | None,
+) -> MoneyResponse | None:
+    if money is None:
+        return None
+
+    return money_to_response(money)
+
+
 def item_to_response(item: ReceiptItem) -> ReceiptItemResponse:
     return ReceiptItemResponse(
         name=item.name,
@@ -126,34 +152,46 @@ def item_to_response(item: ReceiptItem) -> ReceiptItemResponse:
         category=item.category.value,
         bucket=item.bucket.value,
         quantity=item.quantity,
+        unit_price=optional_money_to_response(item.unit_price),
         confidence=item.confidence,
     )
 
 
-def receipt_draft_to_response(draft: ReceiptDraft) -> ReceiptDraftResponse:
+def receipt_draft_to_response(
+    draft: ReceiptDraft,
+) -> ReceiptDraftResponse:
     return ReceiptDraftResponse(
         id=str(draft.id),
         merchant_name=draft.merchant_name,
-        total=money_to_response(draft.total) if draft.total else None,
+        purchased_at=draft.purchased_at,
+        subtotal=optional_money_to_response(draft.subtotal),
+        tax=optional_money_to_response(draft.tax),
+        total=optional_money_to_response(draft.total),
         image_ref=draft.image_ref,
-        parser_name=draft.parser_name,
+        extractor_name=draft.extractor_name,
         items=[item_to_response(item) for item in draft.items],
     )
 
 
-def receipt_to_response(receipt: ConfirmedReceipt) -> ReceiptResponse:
+def receipt_to_response(
+    receipt: ConfirmedReceipt,
+) -> ReceiptResponse:
     return ReceiptResponse(
         id=str(receipt.id),
         user_id=str(receipt.user_id),
         merchant_name=receipt.merchant_name,
-        purchased_at=receipt.purchased_at.isoformat() if receipt.purchased_at else None,
+        purchased_at=receipt.purchased_at,
+        subtotal=optional_money_to_response(receipt.subtotal),
+        tax=optional_money_to_response(receipt.tax),
         total=money_to_response(receipt.total),
         image_ref=receipt.image_ref,
         items=[item_to_response(item) for item in receipt.items],
     )
 
 
-def summary_to_response(summary: SpendingSummary) -> SpendingSummaryResponse:
+def summary_to_response(
+    summary: SpendingSummary,
+) -> SpendingSummaryResponse:
     return SpendingSummaryResponse(
         from_date=summary.from_date.isoformat(),
         to_date=summary.to_date.isoformat(),

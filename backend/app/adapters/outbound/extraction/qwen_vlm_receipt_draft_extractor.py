@@ -365,7 +365,7 @@ class QwenVLMReceiptDraftExtractorAdapter(ReceiptDraftExtractorPort):
                 currency,
             ),
             image_ref=image_ref,
-            parser_name=self.extractor_name,
+            extractor_name=self.extractor_name,
         )
 
     def _to_receipt_item(

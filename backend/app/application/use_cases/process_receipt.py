@@ -54,7 +54,7 @@ class ProcessReceiptUseCase:
                 extraction.draft,
                 user_id=command.user_id,
                 image_ref=stored_image.image_ref,
-                parser_name=extraction.extractor_name,
+                extractor_name=extraction.extractor_name,
             )
 
             prediction = ReceiptPredictionRecord(

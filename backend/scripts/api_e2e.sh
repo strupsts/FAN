@@ -38,7 +38,28 @@ process_response = json.loads(Path("/tmp/fan_process_response.json").read_text()
 confirm_request = {
     "draft_id": process_response["id"],
     "merchant_name": process_response["merchant_name"],
+    "purchased_at": process_response["purchased_at"],
     "image_ref": process_response["image_ref"],
+    "subtotal_amount": (
+        process_response["subtotal"]["amount"]
+        if process_response["subtotal"] is not None
+        else None
+    ),
+    "subtotal_currency": (
+        process_response["subtotal"]["currency"]
+        if process_response["subtotal"] is not None
+        else process_response["total"]["currency"]
+    ),
+    "tax_amount": (
+        process_response["tax"]["amount"]
+        if process_response["tax"] is not None
+        else None
+    ),
+    "tax_currency": (
+        process_response["tax"]["currency"]
+        if process_response["tax"] is not None
+        else process_response["total"]["currency"]
+    ),
     "total_amount": process_response["total"]["amount"],
     "total_currency": process_response["total"]["currency"],
     "items": [
@@ -48,6 +69,17 @@ confirm_request = {
             "total_price_currency": item["total_price"]["currency"],
             "category": item["category"],
             "bucket": item["bucket"],
+            "quantity": item["quantity"],
+            "unit_price_amount": (
+                item["unit_price"]["amount"]
+                if item["unit_price"] is not None
+                else None
+            ),
+            "unit_price_currency": (
+                item["unit_price"]["currency"]
+                if item["unit_price"] is not None
+                else item["total_price"]["currency"]
+            ),
             "confidence": item["confidence"],
         }
         for item in process_response["items"]
@@ -70,7 +102,27 @@ curl -fsS "${API_BASE_URL}/api/receipts/history" \
   -o "${HISTORY_RESPONSE_FILE}"
 
 echo "Fetching summary..."
-curl -fsS "${API_BASE_URL}/api/receipts/summary?from_date=2026-01-01&to_date=2026-12-31" \
+
+PURCHASE_DATE="$(
+  python3 - <<'PY_INNER'
+import json
+from pathlib import Path
+
+response = json.loads(
+    Path("/tmp/fan_process_response.json").read_text()
+)
+
+purchased_at = response.get("purchased_at")
+
+if not purchased_at:
+    raise SystemExit("Process response has no purchased_at")
+
+print(purchased_at[:10])
+PY_INNER
+)"
+
+curl -fsS \
+  "${API_BASE_URL}/api/receipts/summary?from_date=${PURCHASE_DATE}&to_date=${PURCHASE_DATE}" \
   -o "${SUMMARY_RESPONSE_FILE}"
 
 python3 - <<'PY'
@@ -96,6 +148,35 @@ if len(history_response) < 1:
 
 if summary_response["total_spent"]["amount"] == "0.00":
     raise SystemExit("Expected summary total to be greater than zero")
+
+confirmed_history_receipt = next(
+    (
+        receipt
+        for receipt in history_response
+        if receipt["id"] == confirm_response["id"]
+    ),
+    None,
+)
+
+if confirmed_history_receipt is None:
+    raise SystemExit(
+        "Confirmed receipt was not found in history"
+    )
+
+for field_name in (
+    "merchant_name",
+    "purchased_at",
+    "subtotal",
+    "tax",
+    "total",
+):
+    if confirmed_history_receipt[field_name] != confirm_response[field_name]:
+        raise SystemExit(
+            f"History round-trip mismatch for {field_name}"
+        )
+
+if confirmed_history_receipt["items"] != confirm_response["items"]:
+    raise SystemExit("History item round-trip mismatch")
 
 print()
 print("API E2E passed.")

@@ -38,7 +38,7 @@ class FakeReceiptDraftExtractorAdapter(ReceiptDraftExtractorPort):
             ],
             total=Money("7.78"),
             image_ref=image_ref,
-            parser_name=self.extractor_name,
+            extractor_name=self.extractor_name,
         )
 
         model_output = {

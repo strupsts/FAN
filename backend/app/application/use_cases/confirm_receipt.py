@@ -24,6 +24,8 @@ class ConfirmReceiptUseCase:
             purchased_at=command.purchased_at,
             items=command.items,
             total=command.total,
+            subtotal=command.subtotal,
+            tax=command.tax,
             image_ref=command.image_ref,
         )
 

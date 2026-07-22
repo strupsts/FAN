@@ -110,6 +110,26 @@ class SQLAlchemyReceiptRepository(ReceiptRepositoryPort):
             user_id=receipt.user_id,
             merchant_name=receipt.merchant_name,
             purchased_at=receipt.purchased_at,
+            subtotal_amount=(
+                receipt.subtotal.amount
+                if receipt.subtotal is not None
+                else None
+            ),
+            subtotal_currency=(
+                receipt.subtotal.currency
+                if receipt.subtotal is not None
+                else None
+            ),
+            tax_amount=(
+                receipt.tax.amount
+                if receipt.tax is not None
+                else None
+            ),
+            tax_currency=(
+                receipt.tax.currency
+                if receipt.tax is not None
+                else None
+            ),
             total_amount=receipt.total.amount,
             total_currency=receipt.total.currency,
             image_ref=receipt.image_ref,
@@ -136,10 +156,32 @@ class SQLAlchemyReceiptRepository(ReceiptRepositoryPort):
             user_id=row.user_id,
             merchant_name=row.merchant_name,
             purchased_at=row.purchased_at,
-            items=[self._row_to_item(item_row) for item_row in row.items],
+            items=[
+                self._row_to_item(item_row)
+                for item_row in row.items
+            ],
             total=Money(
                 amount=row.total_amount,
                 currency=row.total_currency,
+            ),
+            subtotal=(
+                Money(
+                    amount=row.subtotal_amount,
+                    currency=(
+                        row.subtotal_currency
+                        or row.total_currency
+                    ),
+                )
+                if row.subtotal_amount is not None
+                else None
+            ),
+            tax=(
+                Money(
+                    amount=row.tax_amount,
+                    currency=row.tax_currency or row.total_currency,
+                )
+                if row.tax_amount is not None
+                else None
             ),
             image_ref=row.image_ref,
             confirmed_at=row.confirmed_at,
