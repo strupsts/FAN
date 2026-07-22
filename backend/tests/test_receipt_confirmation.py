@@ -67,10 +67,11 @@ class ReceiptConfirmationTests(unittest.TestCase):
         self,
         *,
         receipt_id: UUID | None = None,
+        user_id: UUID | None = None,
     ) -> ConfirmedReceipt:
         return ConfirmedReceipt(
             id=receipt_id or uuid4(),
-            user_id=self.user_id,
+            user_id=user_id or self.user_id,
             merchant_name="Corrected Store",
             purchased_at=None,
             items=[
@@ -147,13 +148,17 @@ class ReceiptConfirmationTests(unittest.TestCase):
     def test_unknown_or_foreign_draft_is_rejected(
         self,
     ) -> None:
+        foreign_user_id = uuid4()
+
         with self.assertRaises(
             ReceiptDraftNotFoundError
         ):
             self.receipts.confirm_prediction(
-                user_id=uuid4(),
+                user_id=foreign_user_id,
                 receipt_draft_id=self.draft_id,
-                receipt=self._receipt(),
+                receipt=self._receipt(
+                    user_id=foreign_user_id
+                ),
                 target_payload=self._target_payload(),
             )
 

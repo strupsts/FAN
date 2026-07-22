@@ -55,7 +55,7 @@ dev-logs:
 setup:
 > python3 -m venv $(BACKEND_DIR)/.venv
 > $(PIP) install -U pip
-> $(PIP) install -e $(BACKEND_DIR)
+> $(PIP) install -e "$(BACKEND_DIR)[dev]"
 
 api:
 > cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/uvicorn app.main:app --reload
