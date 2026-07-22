@@ -7,15 +7,20 @@ import re
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 
-IMAGE_PATH = Path("data/test_receipt.jpg")
-OUTPUT_DIR = Path("/tmp/fan_vlm_qwen25vl7b_awq")
-BASE_URL = "http://127.0.0.1:8002/v1"
-API_KEY = "local-dev-key"
-MODEL = "local-vlm-receipt-parser"
+INPUT_DIR = Path(__import__("os").environ.get("INPUT_DIR", "data"))
+IMAGE_PATH_ENV = __import__("os").environ.get("IMAGE_PATH")
+OUTPUT_ROOT = Path(__import__("os").environ.get("OUTPUT_ROOT", "/tmp/fan_vlm_qwen25vl7b_awq"))
+BASE_URL = __import__("os").environ.get("VLM_BASE_URL", "http://127.0.0.1:8002/v1")
+API_KEY = __import__("os").environ.get("VLM_API_KEY", "local-dev-key")
+MODEL = __import__("os").environ.get("VLM_MODEL", "local-vlm-receipt-parser")
+TIMEOUT_SECONDS = int(__import__("os").environ.get("VLM_TIMEOUT_SECONDS", "300"))
+
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 SYSTEM_PROMPT = """You are a receipt image parser.
@@ -59,6 +64,31 @@ Rules:
 """
 
 
+def find_images() -> list[Path]:
+    if IMAGE_PATH_ENV:
+        image_path = Path(IMAGE_PATH_ENV)
+        if not image_path.exists():
+            raise SystemExit(f"IMAGE_PATH not found: {image_path}")
+        return [image_path]
+
+    if not INPUT_DIR.exists():
+        raise SystemExit(f"INPUT_DIR not found: {INPUT_DIR}")
+
+    images = [
+        path
+        for path in sorted(INPUT_DIR.iterdir())
+        if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
+    ]
+
+    if not images:
+        raise SystemExit(
+            f"No images found in {INPUT_DIR}. "
+            f"Supported extensions: {', '.join(sorted(IMAGE_EXTENSIONS))}"
+        )
+
+    return images
+
+
 def image_to_data_url(path: Path) -> str:
     mime_type = mimetypes.guess_type(path.name)[0] or "image/jpeg"
     encoded = base64.b64encode(path.read_bytes()).decode("ascii")
@@ -94,13 +124,8 @@ def extract_json(raw_content: str) -> dict[str, Any]:
     return parsed
 
 
-def main() -> None:
-    if not IMAGE_PATH.exists():
-        raise SystemExit(f"Image not found: {IMAGE_PATH}")
-
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-    payload = {
+def build_payload(image_path: Path) -> dict[str, Any]:
+    return {
         "model": MODEL,
         "messages": [
             {
@@ -117,7 +142,7 @@ def main() -> None:
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": image_to_data_url(IMAGE_PATH),
+                            "url": image_to_data_url(image_path),
                         },
                     },
                 ],
@@ -126,6 +151,10 @@ def main() -> None:
         "temperature": 0,
         "max_tokens": 900,
     }
+
+
+def request_vlm(image_path: Path) -> tuple[float, dict[str, Any], str]:
+    payload = build_payload(image_path)
 
     request = urllib.request.Request(
         url=f"{BASE_URL}/chat/completions",
@@ -140,46 +169,117 @@ def main() -> None:
     started_at = time.perf_counter()
 
     try:
-        with urllib.request.urlopen(request, timeout=300) as response:
+        with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
             body = response.read().decode("utf-8")
     except urllib.error.URLError as error:
-        raise SystemExit(f"VLM request failed: {error}") from error
+        raise RuntimeError(f"VLM request failed for {image_path}: {error}") from error
 
     finished_at = time.perf_counter()
-    request_seconds = finished_at - started_at
-
     response_json = json.loads(body)
-    raw_content = response_json["choices"][0]["message"]["content"]
-
-    raw_response_path = OUTPUT_DIR / "response.json"
-    raw_content_path = OUTPUT_DIR / "raw_content.txt"
-    parsed_json_path = OUTPUT_DIR / "parsed.json"
-
-    raw_response_path.write_text(json.dumps(response_json, indent=2, ensure_ascii=False))
-    raw_content_path.write_text(raw_content)
-
-    print(f"Request seconds: {request_seconds:.2f}")
-    print()
-    print("Raw content:")
-    print(raw_content)
-    print()
 
     try:
+        raw_content = response_json["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as error:
+        raise RuntimeError(f"Unexpected VLM response shape: {response_json}") from error
+
+    return finished_at - started_at, response_json, raw_content
+
+
+def safe_name(path: Path) -> str:
+    return re.sub(r"[^a-zA-Z0-9_.-]+", "_", path.stem)
+
+
+def process_image(image_path: Path, run_dir: Path) -> dict[str, Any]:
+    image_output_dir = run_dir / safe_name(image_path)
+    image_output_dir.mkdir(parents=True, exist_ok=True)
+
+    result: dict[str, Any] = {
+        "image_path": str(image_path),
+        "ok": False,
+        "request_seconds": None,
+        "merchant_name": None,
+        "total_amount": None,
+        "currency": None,
+        "item_count": None,
+        "error": None,
+        "output_dir": str(image_output_dir),
+    }
+
+    print("=" * 80)
+    print(f"Image: {image_path}")
+
+    try:
+        request_seconds, response_json, raw_content = request_vlm(image_path)
         parsed = extract_json(raw_content)
+
+        (image_output_dir / "response.json").write_text(
+            json.dumps(response_json, indent=2, ensure_ascii=False)
+        )
+        (image_output_dir / "raw_content.txt").write_text(raw_content)
+        (image_output_dir / "parsed.json").write_text(
+            json.dumps(parsed, indent=2, ensure_ascii=False)
+        )
+
+        items = parsed.get("items") or []
+
+        result.update(
+            {
+                "ok": True,
+                "request_seconds": round(request_seconds, 3),
+                "merchant_name": parsed.get("merchant_name"),
+                "total_amount": parsed.get("total_amount"),
+                "currency": parsed.get("currency"),
+                "item_count": len(items) if isinstance(items, list) else None,
+            }
+        )
+
+        print(f"Request seconds: {request_seconds:.2f}")
+        print(f"Merchant: {result['merchant_name']}")
+        print(f"Total: {result['total_amount']} {result['currency']}")
+        print(f"Items: {result['item_count']}")
+        print("Parsed JSON:")
+        print(json.dumps(parsed, indent=2, ensure_ascii=False))
+
     except Exception as error:
-        print(f"JSON parse failed: {error}")
-        print(f"Raw response saved to: {raw_response_path}")
-        print(f"Raw content saved to: {raw_content_path}")
-        raise
+        result["error"] = str(error)
+        print(f"FAILED: {error}")
 
-    parsed_json_path.write_text(json.dumps(parsed, indent=2, ensure_ascii=False))
+    print(f"Output dir: {image_output_dir}")
+    return result
 
-    print("Parsed JSON:")
-    print(json.dumps(parsed, indent=2, ensure_ascii=False))
+
+def main() -> None:
+    images = find_images()
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_dir = OUTPUT_ROOT / "runs" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    summary_path = run_dir / "summary.jsonl"
+
+    print(f"Input dir: {INPUT_DIR}")
+    print(f"Images: {len(images)}")
+    print(f"Output run dir: {run_dir}")
+    print(f"Base URL: {BASE_URL}")
+    print(f"Model: {MODEL}")
     print()
-    print(f"Raw response saved to: {raw_response_path}")
-    print(f"Raw content saved to: {raw_content_path}")
-    print(f"Parsed JSON saved to: {parsed_json_path}")
+
+    results = []
+
+    for image_path in images:
+        result = process_image(image_path=image_path, run_dir=run_dir)
+        results.append(result)
+
+        with summary_path.open("a", encoding="utf-8") as file:
+            file.write(json.dumps(result, ensure_ascii=False) + "\n")
+
+    ok_count = sum(1 for result in results if result["ok"])
+    failed_count = len(results) - ok_count
+
+    print("=" * 80)
+    print("Batch summary:")
+    print(f"OK: {ok_count}")
+    print(f"Failed: {failed_count}")
+    print(f"Summary: {summary_path}")
 
 
 if __name__ == "__main__":
