@@ -9,6 +9,7 @@ LOG_DIR="${RUNTIME_DIR}/logs"
 
 API_PID_FILE="${PID_DIR}/api.pid"
 VLM_PID_FILE="${PID_DIR}/vlm.pid"
+STOP_REQUEST_FILE="${RUNTIME_DIR}/stop-requested"
 
 API_LOG_FILE="${LOG_DIR}/api.log"
 VLM_LOG_FILE="${LOG_DIR}/vlm.log"
@@ -276,6 +277,7 @@ cleanup_up() {
 
   stop_process_group "${API_PID_FILE}" "API"
   stop_process_group "${VLM_PID_FILE}" "VLM"
+  rm -f "${STOP_REQUEST_FILE}"
 
   if ((DB_STARTED_BY_SCRIPT == 1)); then
     log "Stopping Postgres..."
@@ -291,6 +293,7 @@ action_up() {
   check_requirements
 
   mkdir -p "${PID_DIR}" "${LOG_DIR}"
+  rm -f "${STOP_REQUEST_FILE}"
 
   remove_stale_pid_file "${API_PID_FILE}" "API"
   remove_stale_pid_file "${VLM_PID_FILE}" "VLM"
@@ -356,13 +359,19 @@ action_up() {
   local service_exit_code=$?
   set -e
 
-  log "A managed service exited with code ${service_exit_code}."
+  if [[ -f "${STOP_REQUEST_FILE}" ]]; then
+    log "Dev stack shutdown was requested."
+    return 0
+  fi
+
+  log "A managed service exited unexpectedly with code ${service_exit_code}."
   return 1
 }
 
 
 action_down() {
   mkdir -p "${PID_DIR}" "${LOG_DIR}"
+  touch "${STOP_REQUEST_FILE}"
 
   stop_process_group "${API_PID_FILE}" "API"
   stop_process_group "${VLM_PID_FILE}" "VLM"
