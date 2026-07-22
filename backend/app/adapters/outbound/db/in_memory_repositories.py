@@ -48,8 +48,28 @@ class InMemoryPredictionRepository(PredictionRepositoryPort):
     def __init__(self) -> None:
         self.predictions: list[ReceiptPredictionRecord] = []
 
-    def save_prediction(self, prediction: ReceiptPredictionRecord) -> None:
+    def save_prediction(
+        self,
+        prediction: ReceiptPredictionRecord,
+    ) -> None:
         self.predictions.append(prediction)
+
+    def get_prediction(
+        self,
+        *,
+        user_id: UUID,
+        receipt_draft_id: UUID,
+    ) -> ReceiptPredictionRecord | None:
+        return next(
+            (
+                prediction
+                for prediction in self.predictions
+                if prediction.user_id == user_id
+                and prediction.receipt_draft_id
+                == receipt_draft_id
+            ),
+            None,
+        )
 
 
 class InMemoryTrainingSampleRepository(TrainingSampleRepositoryPort):

@@ -5,10 +5,14 @@ from pathlib import Path
 
 from app.adapters.outbound.analytics.in_memory_analytics_adapter import InMemoryAnalyticsAdapter
 from app.adapters.outbound.db.in_memory_repositories import (
-    InMemoryPredictionRepository,
     InMemoryTrainingSampleRepository,
 )
-from app.adapters.outbound.db.sqlalchemy_receipt_repository import SQLAlchemyReceiptRepository
+from app.adapters.outbound.db.sqlalchemy_prediction_repository import (
+    SQLAlchemyPredictionRepository,
+)
+from app.adapters.outbound.db.sqlalchemy_receipt_repository import (
+    SQLAlchemyReceiptRepository,
+)
 from app.adapters.outbound.extraction import (
     FakeReceiptDraftExtractorAdapter,
     QwenVLMReceiptDraftExtractorAdapter,
@@ -31,7 +35,7 @@ class AppContainer:
     image_storage: LocalImageStorageAdapter
     extractor: ReceiptDraftExtractorPort
     receipt_repository: SQLAlchemyReceiptRepository
-    prediction_repository: InMemoryPredictionRepository
+    prediction_repository: SQLAlchemyPredictionRepository
     training_sample_repository: InMemoryTrainingSampleRepository
     analytics: InMemoryAnalyticsAdapter
     privacy: NoopPrivacyAdapter
@@ -67,7 +71,9 @@ def build_container() -> AppContainer:
     receipt_repository = SQLAlchemyReceiptRepository(
         session_factory=session_factory
     )
-    prediction_repository = InMemoryPredictionRepository()
+    prediction_repository = SQLAlchemyPredictionRepository(
+        session_factory=session_factory
+    )
     training_sample_repository = InMemoryTrainingSampleRepository()
     analytics = InMemoryAnalyticsAdapter()
     privacy = NoopPrivacyAdapter()

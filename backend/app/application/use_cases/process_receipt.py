@@ -31,7 +31,10 @@ class ProcessReceiptUseCase:
         self.prediction_repository = prediction_repository
         self.analytics = analytics
 
-    def execute(self, command: ProcessReceiptCommand) -> ReceiptDraft:
+    def execute(
+        self,
+        command: ProcessReceiptCommand,
+    ) -> ReceiptDraft:
         stored_image = self.image_storage.save_receipt_image(
             user_id=command.user_id,
             image_bytes=command.image_bytes,
@@ -46,43 +49,47 @@ class ProcessReceiptUseCase:
                 content_type=command.content_type,
                 image_ref=stored_image.image_ref,
             )
+
+            receipt_draft = replace(
+                extraction.draft,
+                user_id=command.user_id,
+                image_ref=stored_image.image_ref,
+                parser_name=extraction.extractor_name,
+            )
+
+            prediction = ReceiptPredictionRecord(
+                user_id=command.user_id,
+                receipt_draft_id=receipt_draft.id,
+                image_ref=stored_image.image_ref,
+                extractor_name=extraction.extractor_name,
+                model_output=extraction.model_output,
+            )
+
+            self.prediction_repository.save_prediction(prediction)
         except Exception:
             try:
                 self.image_storage.delete(stored_image.image_ref)
             except Exception:
                 logger.exception(
-                    "Failed to delete receipt image after extraction failure",
-                    extra={"image_ref": stored_image.image_ref},
+                    "Failed to delete receipt image after "
+                    "receipt processing failure",
+                    extra={
+                        "image_ref": stored_image.image_ref,
+                    },
                 )
 
             raise
-
-        receipt_draft = replace(
-            extraction.draft,
-            user_id=command.user_id,
-            image_ref=stored_image.image_ref,
-            parser_name=extraction.extractor_name,
-        )
-
-        prediction = ReceiptPredictionRecord(
-            user_id=command.user_id,
-            receipt_draft_id=receipt_draft.id,
-            image_ref=stored_image.image_ref,
-            ocr_engine=None,
-            parser_name=extraction.extractor_name,
-            raw_ocr_text=None,
-            model_output=extraction.model_output,
-        )
-        self.prediction_repository.save_prediction(prediction)
 
         self.analytics.track(
             AnalyticsEvent(
                 name="receipt_processed",
                 user_id=command.user_id,
                 properties={
+                    "prediction_id": str(prediction.id),
                     "extractor_name": extraction.extractor_name,
                     "item_count": len(receipt_draft.items),
-                    "has_total_mismatch": receipt_draft.has_total_mismatch(),
+                    "has_total_mismatch":
+                        receipt_draft.has_total_mismatch(),
                 },
             )
         )

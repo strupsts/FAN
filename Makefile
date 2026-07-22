@@ -83,7 +83,7 @@ test:
 > cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/python -m unittest discover -s tests -p "test_*.py"
 
 smoke:
-> cd $(BACKEND_DIR) && RECEIPT_EXTRACTION_PROVIDER=fake PYTHONPATH=. .venv/bin/python scripts/smoke.py
+> cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/python scripts/smoke.py
 
 status:
 > git status
