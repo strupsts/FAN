@@ -134,3 +134,10 @@ ion-select.ng-invalid.ng-touched {
     grid-column: auto;
   }
 }
+
+.calculation-note {
+  margin: -4px 0 0;
+  color: var(--ion-color-step-600);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}

@@ -78,7 +78,31 @@ describe('ReceiptReviewFormComponent', () => {
     ).toBe('Detected Item');
   });
 
-  it('emits the corrected confirmation request', () => {
+  it('recalculates totals after adding an item', () => {
+    component.addItem();
+
+    component.items
+      .at(1)
+      .controls.name
+      .setValue('Added Item');
+
+    component.items
+      .at(1)
+      .controls.total_price_amount
+      .setValue('7.80');
+
+    component.recalculateTotals();
+
+    expect(
+      component.form.controls.subtotal_amount.value,
+    ).toBe('17.80');
+
+    expect(
+      component.form.controls.total_amount.value,
+    ).toBe('18.30');
+  });
+
+  it('emits corrected calculated totals', () => {
     let emitted:
       | ConfirmReceiptRequest
       | undefined;
@@ -90,7 +114,6 @@ describe('ReceiptReviewFormComponent', () => {
     component.form.controls.merchant_name.setValue(
       'Corrected Store',
     );
-    component.form.controls.total_amount.setValue('12.34');
 
     component.items
       .at(0)
@@ -102,14 +125,19 @@ describe('ReceiptReviewFormComponent', () => {
       .controls.total_price_amount
       .setValue('12.34');
 
+    component.recalculateTotals();
     component.submit();
 
     expect(emitted?.merchant_name).toBe(
       'Corrected Store',
     );
-    expect(emitted?.total_amount).toBe('12.34');
+
+    expect(emitted?.subtotal_amount).toBe('12.34');
+    expect(emitted?.total_amount).toBe('12.84');
+
     expect(emitted?.items[0].name).toBe(
       'Corrected Item',
     );
   });
+
 });

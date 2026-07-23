@@ -141,6 +141,7 @@ export class ReceiptReviewFormComponent implements OnChanges {
       this.form.controls.total_currency.value || 'CAD';
 
     this.items.push(this.createItemGroup(null, currency));
+    this.recalculateTotals();
   }
 
   removeItem(index: number): void {
@@ -149,6 +150,56 @@ export class ReceiptReviewFormComponent implements OnChanges {
     }
 
     this.items.removeAt(index);
+    this.recalculateTotals();
+  }
+
+  recalculateTotals(): void {
+    let subtotalCents = 0;
+
+    for (const itemGroup of this.items.controls) {
+      const value =
+        itemGroup.controls.total_price_amount.value.trim();
+
+      if (value === '') {
+        continue;
+      }
+
+      const amountCents = this.parseMoneyToCents(value);
+
+      if (amountCents === null) {
+        return;
+      }
+
+      subtotalCents += amountCents;
+    }
+
+    const taxValue =
+      this.form.controls.tax_amount.value.trim();
+
+    const taxCents =
+      taxValue === ''
+        ? 0
+        : this.parseMoneyToCents(taxValue);
+
+    if (taxCents === null) {
+      return;
+    }
+
+    this.form.controls.subtotal_amount.setValue(
+      this.formatMoneyFromCents(subtotalCents),
+      {
+        emitEvent: false,
+      },
+    );
+
+    this.form.controls.total_amount.setValue(
+      this.formatMoneyFromCents(
+        subtotalCents + taxCents,
+      ),
+      {
+        emitEvent: false,
+      },
+    );
   }
 
   submit(): void {
@@ -324,6 +375,44 @@ export class ReceiptReviewFormComponent implements OnChanges {
         item?.confidence ?? null,
       ),
     });
+  }
+
+  private parseMoneyToCents(
+    value: string,
+  ): number | null {
+    const match = value.trim().match(
+      /^(-?)(\d+)(?:\.(\d{1,2}))?$/,
+    );
+
+    if (match === null) {
+      return null;
+    }
+
+    const whole = Number(match[2]);
+    const fraction = Number(
+      (match[3] ?? '').padEnd(2, '0'),
+    );
+
+    const cents = whole * 100 + fraction;
+
+    if (!Number.isSafeInteger(cents)) {
+      return null;
+    }
+
+    return match[1] === '-' ? -cents : cents;
+  }
+
+  private formatMoneyFromCents(
+    cents: number,
+  ): string {
+    const sign = cents < 0 ? '-' : '';
+    const absolute = Math.abs(cents);
+    const whole = Math.floor(absolute / 100);
+    const fraction = (absolute % 100)
+      .toString()
+      .padStart(2, '0');
+
+    return `${sign}${whole}.${fraction}`;
   }
 
   private emptyToNull(value: string): string | null {

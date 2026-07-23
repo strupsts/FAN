@@ -34,14 +34,14 @@
           <ion-input
             formControlName="subtotal_amount"
             [label]="
-              'Subtotal (' +
+              'Calculated subtotal (' +
               form.controls.subtotal_currency.value +
               ')'
             "
             labelPlacement="stacked"
             fill="outline"
             inputmode="decimal"
-            placeholder="0.00"
+            [readonly]="true"
           ></ion-input>
 
           <ion-input
@@ -55,22 +55,28 @@
             fill="outline"
             inputmode="decimal"
             placeholder="0.00"
+            (ionInput)="recalculateTotals()"
           ></ion-input>
 
           <ion-input
             class="total-field"
             formControlName="total_amount"
             [label]="
-              'Total (' +
+              'Calculated total (' +
               form.controls.total_currency.value +
               ')'
             "
             labelPlacement="stacked"
             fill="outline"
             inputmode="decimal"
-            placeholder="0.00"
+            [readonly]="true"
           ></ion-input>
         </div>
+
+        <p class="calculation-note">
+          Subtotal is calculated from item totals.
+          Total is subtotal plus tax.
+        </p>
       </section>
 
       <section class="form-section">
@@ -150,6 +156,7 @@
                   fill="outline"
                   inputmode="decimal"
                   placeholder="0.00"
+                  (ionInput)="recalculateTotals()"
                 ></ion-input>
               </div>
 
