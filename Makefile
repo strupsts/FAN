@@ -4,7 +4,7 @@ BACKEND_DIR := backend
 PYTHON := $(BACKEND_DIR)/.venv/bin/python
 PIP := $(PYTHON) -m pip
 
-.PHONY: help setup api db-up db-down db-logs db-clear health health-db vlm-health vlm-serve vlm-sample process api-e2e api-e2e-clean test smoke status clean-pyc dev dev-down dev-status dev-logs db-upgrade db-downgrade db-current db-check db-revision db-stamp
+.PHONY: help setup api db-up db-down db-logs db-clear health health-db vlm-health vlm-serve vlm-sample process api-e2e api-e2e-clean test smoke status clean-pyc frontend frontend-build frontend-lint dev dev-down dev-status dev-logs db-upgrade db-downgrade db-current db-check db-revision db-stamp
 
 help:
 > @echo "F.A.N. dev commands:"
@@ -15,6 +15,9 @@ help:
 > @echo "  make dev-logs   Follow API and VLM logs"
 > @echo "  make setup      Create/update WSL backend venv and install dependencies"
 > @echo "  make api        Start FastAPI dev server"
+> @echo "  make frontend   Start Ionic frontend dev server"
+> @echo "  make frontend-build Build Ionic frontend"
+> @echo "  make frontend-lint  Lint Ionic frontend"
 > @echo "  make db-up      Start Postgres"
 > @echo "  make db-down    Stop Postgres"
 > @echo "  make db-logs    Show Postgres logs"
@@ -49,8 +52,8 @@ dev-status:
 
 dev-logs:
 > @mkdir -p .runtime/logs
-> @touch .runtime/logs/api.log .runtime/logs/vlm.log
-> tail -n 100 -F .runtime/logs/vlm.log .runtime/logs/api.log
+> @touch .runtime/logs/api.log .runtime/logs/vlm.log .runtime/logs/frontend.log
+> tail -n 100 -F .runtime/logs/vlm.log .runtime/logs/api.log .runtime/logs/frontend.log
 
 setup:
 > python3 -m venv $(BACKEND_DIR)/.venv
@@ -59,6 +62,15 @@ setup:
 
 api:
 > cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/uvicorn app.main:app --reload
+
+frontend:
+> bash -c 'export NVM_DIR="$$HOME/.nvm"; . "$$NVM_DIR/nvm.sh"; cd frontend; nvm use --silent; exec npm run start:mobile'
+
+frontend-build:
+> bash -c 'export NVM_DIR="$$HOME/.nvm"; . "$$NVM_DIR/nvm.sh"; cd frontend; nvm use --silent; npm run build'
+
+frontend-lint:
+> bash -c 'export NVM_DIR="$$HOME/.nvm"; . "$$NVM_DIR/nvm.sh"; cd frontend; nvm use --silent; npm run lint'
 
 db-up:
 > docker compose up -d db

@@ -9,18 +9,22 @@ LOG_DIR="${RUNTIME_DIR}/logs"
 
 API_PID_FILE="${PID_DIR}/api.pid"
 VLM_PID_FILE="${PID_DIR}/vlm.pid"
+FRONTEND_PID_FILE="${PID_DIR}/frontend.pid"
 STOP_REQUEST_FILE="${RUNTIME_DIR}/stop-requested"
 
 API_LOG_FILE="${LOG_DIR}/api.log"
 VLM_LOG_FILE="${LOG_DIR}/vlm.log"
+FRONTEND_LOG_FILE="${LOG_DIR}/frontend.log"
 
 API_BASE_URL="${API_BASE_URL:-http://127.0.0.1:8000}"
 VLM_BASE_URL="${VLM_BASE_URL:-http://127.0.0.1:8002/v1}"
+FRONTEND_BASE_URL="${FRONTEND_BASE_URL:-http://127.0.0.1:8100}"
 VLM_API_KEY="${VLM_API_KEY:-local-dev-key}"
 
 DB_STARTUP_TIMEOUT_SECONDS="${DB_STARTUP_TIMEOUT_SECONDS:-60}"
 API_STARTUP_TIMEOUT_SECONDS="${API_STARTUP_TIMEOUT_SECONDS:-60}"
 VLM_STARTUP_TIMEOUT_SECONDS="${VLM_STARTUP_TIMEOUT_SECONDS:-360}"
+FRONTEND_STARTUP_TIMEOUT_SECONDS="${FRONTEND_STARTUP_TIMEOUT_SECONDS:-120}"
 
 DB_STARTED_BY_SCRIPT=0
 TAIL_PID=""
@@ -208,6 +212,15 @@ check_requirements() {
 
   [[ -x "${vlm_venv}/bin/vllm" ]] \
     || fail "VLM environment is missing: ${vlm_venv}"
+
+  [[ -s "${HOME}/.nvm/nvm.sh" ]] \
+    || fail "nvm is missing. Install nvm before running the frontend."
+
+  [[ -f "${ROOT_DIR}/frontend/package.json" ]] \
+    || fail "Frontend project is missing."
+
+  [[ -d "${ROOT_DIR}/frontend/node_modules" ]] \
+    || fail "Frontend dependencies are missing. Run: cd frontend && npm install"
 }
 
 
@@ -220,6 +233,10 @@ ensure_manual_services_are_stopped() {
     -H "Authorization: Bearer ${VLM_API_KEY}" \
     "${VLM_BASE_URL}/models" >/dev/null 2>&1; then
     fail "VLM is already running outside dev stack. Stop it first."
+  fi
+
+  if curl -fsS "${FRONTEND_BASE_URL}" >/dev/null 2>&1; then
+    fail "Frontend is already running outside dev stack. Stop it first."
   fi
 }
 
@@ -257,10 +274,31 @@ start_api() {
 }
 
 
+start_frontend() {
+  : > "${FRONTEND_LOG_FILE}"
+
+  setsid bash -c '
+    export NVM_DIR="${HOME}/.nvm"
+    source "${NVM_DIR}/nvm.sh"
+
+    cd "$1/frontend"
+    nvm use --silent
+
+    exec npm run start:mobile
+  ' _ "${ROOT_DIR}" >"${FRONTEND_LOG_FILE}" 2>&1 &
+
+  local pid=$!
+  printf '%s\n' "${pid}" > "${FRONTEND_PID_FILE}"
+
+  log "Frontend started with PID ${pid}."
+}
+
+
 start_log_stream() {
   tail -n +1 -F \
     "${VLM_LOG_FILE}" \
-    "${API_LOG_FILE}" &
+    "${API_LOG_FILE}" \
+    "${FRONTEND_LOG_FILE}" &
 
   TAIL_PID=$!
 }
@@ -275,6 +313,7 @@ cleanup_up() {
     kill "${TAIL_PID}" 2>/dev/null || true
   fi
 
+  stop_process_group "${FRONTEND_PID_FILE}" "Frontend"
   stop_process_group "${API_PID_FILE}" "API"
   stop_process_group "${VLM_PID_FILE}" "VLM"
   rm -f "${STOP_REQUEST_FILE}"
@@ -297,6 +336,7 @@ action_up() {
 
   remove_stale_pid_file "${API_PID_FILE}" "API"
   remove_stale_pid_file "${VLM_PID_FILE}" "VLM"
+  remove_stale_pid_file "${FRONTEND_PID_FILE}" "Frontend"
 
   ensure_manual_services_are_stopped
 
@@ -322,13 +362,16 @@ action_up() {
 
   start_vlm
   start_api
+  start_frontend
   start_log_stream
 
   local api_pid
   local vlm_pid
+  local frontend_pid
 
   api_pid="$(cat "${API_PID_FILE}")"
   vlm_pid="$(cat "${VLM_PID_FILE}")"
+  frontend_pid="$(cat "${FRONTEND_PID_FILE}")"
 
   wait_for_http \
     "API" \
@@ -336,6 +379,13 @@ action_up() {
     "${API_STARTUP_TIMEOUT_SECONDS}" \
     "${api_pid}" \
     || fail "API startup failed. See: ${API_LOG_FILE}"
+
+  wait_for_http \
+    "Frontend" \
+    "${FRONTEND_BASE_URL}" \
+    "${FRONTEND_STARTUP_TIMEOUT_SECONDS}" \
+    "${frontend_pid}" \
+    || fail "Frontend startup failed. See: ${FRONTEND_LOG_FILE}"
 
   wait_for_http \
     "VLM" \
@@ -350,12 +400,13 @@ action_up() {
   log "API:      ${API_BASE_URL}"
   log "API docs: ${API_BASE_URL}/docs"
   log "VLM:      ${VLM_BASE_URL}"
+  log "Frontend: ${FRONTEND_BASE_URL}"
   log "Logs:     ${LOG_DIR}"
   log "Press Ctrl+C to stop services started by this command."
   printf '\n'
 
   set +e
-  wait -n "${api_pid}" "${vlm_pid}"
+  wait -n "${api_pid}" "${vlm_pid}" "${frontend_pid}"
   local service_exit_code=$?
   set -e
 
@@ -373,6 +424,7 @@ action_down() {
   mkdir -p "${PID_DIR}" "${LOG_DIR}"
   touch "${STOP_REQUEST_FILE}"
 
+  stop_process_group "${FRONTEND_PID_FILE}" "Frontend"
   stop_process_group "${API_PID_FILE}" "API"
   stop_process_group "${VLM_PID_FILE}" "VLM"
 
@@ -407,6 +459,7 @@ action_status() {
 
   print_process_status "API" "${API_PID_FILE}"
   print_process_status "VLM" "${VLM_PID_FILE}"
+  print_process_status "Frontend" "${FRONTEND_PID_FILE}"
 
   if db_is_running; then
     printf '%-10s running\n' "Postgres:"
@@ -418,6 +471,12 @@ action_status() {
     printf '%-10s ready\n' "API HTTP:"
   else
     printf '%-10s unavailable\n' "API HTTP:"
+  fi
+
+  if curl -fsS "${FRONTEND_BASE_URL}" >/dev/null 2>&1; then
+    printf '%-10s ready\n' "Frontend HTTP:"
+  else
+    printf '%-10s unavailable\n' "Frontend HTTP:"
   fi
 
   if curl -fsS \
