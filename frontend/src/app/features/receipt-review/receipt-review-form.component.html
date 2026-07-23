@@ -1,0 +1,230 @@
+<ion-card class="review-card">
+  <form
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    novalidate
+  >
+    <ion-card-content>
+      <p class="eyebrow">Review receipt</p>
+      <h2>Check the detected details</h2>
+
+      <section class="form-section">
+        <ion-input
+          formControlName="merchant_name"
+          label="Merchant"
+          labelPlacement="stacked"
+          fill="outline"
+          autocomplete="organization"
+          placeholder="Unknown merchant"
+        ></ion-input>
+
+        <ion-input
+          formControlName="purchased_at"
+          label="Purchase date and time"
+          labelPlacement="stacked"
+          fill="outline"
+          type="datetime-local"
+        ></ion-input>
+      </section>
+
+      <section class="form-section">
+        <h3>Totals</h3>
+
+        <div class="money-grid">
+          <ion-input
+            formControlName="subtotal_amount"
+            [label]="
+              'Subtotal (' +
+              form.controls.subtotal_currency.value +
+              ')'
+            "
+            labelPlacement="stacked"
+            fill="outline"
+            inputmode="decimal"
+            placeholder="0.00"
+          ></ion-input>
+
+          <ion-input
+            formControlName="tax_amount"
+            [label]="
+              'Tax (' +
+              form.controls.tax_currency.value +
+              ')'
+            "
+            labelPlacement="stacked"
+            fill="outline"
+            inputmode="decimal"
+            placeholder="0.00"
+          ></ion-input>
+
+          <ion-input
+            class="total-field"
+            formControlName="total_amount"
+            [label]="
+              'Total (' +
+              form.controls.total_currency.value +
+              ')'
+            "
+            labelPlacement="stacked"
+            fill="outline"
+            inputmode="decimal"
+            placeholder="0.00"
+          ></ion-input>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <div class="section-heading">
+          <div>
+            <h3>Items</h3>
+            <p>{{ items.length }} item(s)</p>
+          </div>
+
+          <ion-button
+            type="button"
+            fill="outline"
+            size="small"
+            (click)="addItem()"
+          >
+            Add item
+          </ion-button>
+        </div>
+
+        <div formArrayName="items">
+          @for (
+            itemGroup of items.controls;
+            track itemGroup;
+            let index = $index
+          ) {
+            <section
+              class="item-editor"
+              [formGroupName]="index"
+            >
+              <div class="item-heading">
+                <strong>Item {{ index + 1 }}</strong>
+
+                <ion-button
+                  type="button"
+                  fill="clear"
+                  color="danger"
+                  size="small"
+                  [disabled]="items.length === 1"
+                  (click)="removeItem(index)"
+                >
+                  Remove
+                </ion-button>
+              </div>
+
+              <ion-input
+                formControlName="name"
+                label="Item name"
+                labelPlacement="stacked"
+                fill="outline"
+                placeholder="Receipt item"
+              ></ion-input>
+
+              <div class="item-money-grid">
+                <ion-input
+                  formControlName="quantity"
+                  label="Quantity"
+                  labelPlacement="stacked"
+                  fill="outline"
+                  inputmode="decimal"
+                  placeholder="1"
+                ></ion-input>
+
+                <ion-input
+                  formControlName="unit_price_amount"
+                  label="Unit price"
+                  labelPlacement="stacked"
+                  fill="outline"
+                  inputmode="decimal"
+                  placeholder="0.00"
+                ></ion-input>
+
+                <ion-input
+                  class="item-total"
+                  formControlName="total_price_amount"
+                  label="Item total"
+                  labelPlacement="stacked"
+                  fill="outline"
+                  inputmode="decimal"
+                  placeholder="0.00"
+                ></ion-input>
+              </div>
+
+              <div class="select-grid">
+                <ion-select
+                  formControlName="category"
+                  label="Category"
+                  labelPlacement="stacked"
+                  fill="outline"
+                  interface="popover"
+                >
+                  @for (
+                    option of categoryOptions;
+                    track option.value
+                  ) {
+                    <ion-select-option
+                      [value]="option.value"
+                    >
+                      {{ option.label }}
+                    </ion-select-option>
+                  }
+                </ion-select>
+
+                <ion-select
+                  formControlName="bucket"
+                  label="Budget group"
+                  labelPlacement="stacked"
+                  fill="outline"
+                  interface="popover"
+                >
+                  @for (
+                    option of bucketOptions;
+                    track option.value
+                  ) {
+                    <ion-select-option
+                      [value]="option.value"
+                    >
+                      {{ option.label }}
+                    </ion-select-option>
+                  }
+                </ion-select>
+              </div>
+            </section>
+          }
+        </div>
+      </section>
+
+      @if (showValidationErrors() && form.invalid) {
+        <p class="validation-message" role="alert">
+          Check the highlighted fields. Names and totals
+          are required, and money values may contain no
+          more than two decimal places.
+        </p>
+      }
+
+      <ion-button
+        class="save-action"
+        expand="block"
+        type="submit"
+        [disabled]="
+          isSubmitting ||
+          form.invalid ||
+          items.length === 0
+        "
+      >
+        @if (isSubmitting) {
+          <ion-spinner
+            slot="start"
+            name="crescent"
+          ></ion-spinner>
+          Saving receipt…
+        } @else {
+          Confirm and save
+        }
+      </ion-button>
+    </ion-card-content>
+  </form>
+</ion-card>

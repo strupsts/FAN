@@ -1,0 +1,136 @@
+:host {
+  display: block;
+}
+
+.review-card {
+  margin: 20px 0 0;
+  border-radius: 24px;
+  box-shadow: none;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--ion-color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h2 {
+  margin-bottom: 20px;
+  font-size: 1.35rem;
+}
+
+.form-section {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.form-section h3 {
+  margin-bottom: 0;
+  font-size: 1rem;
+}
+
+ion-input,
+ion-select {
+  --border-radius: 14px;
+}
+
+ion-button {
+  min-height: 46px;
+  margin-inline: 0;
+  --border-radius: 14px;
+}
+
+.money-grid,
+.item-money-grid,
+.select-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.total-field,
+.item-total {
+  grid-column: 1 / -1;
+}
+
+.section-heading,
+.item-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-heading p {
+  margin-bottom: 0;
+  color: var(--ion-color-step-600);
+  font-size: 0.8rem;
+}
+
+.item-editor {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--ion-color-step-200);
+  border-radius: 18px;
+  background: var(--ion-color-step-50);
+}
+
+.validation-message {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(var(--ion-color-danger-rgb), 0.12);
+  color: var(--ion-color-danger);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.save-action {
+  margin-top: 20px;
+  min-height: 52px;
+}
+
+ion-input.ng-invalid.ng-touched,
+ion-select.ng-invalid.ng-touched {
+  --border-color: var(--ion-color-danger);
+  --highlight-color-focused: var(--ion-color-danger);
+}
+
+@media (max-width: 359px) {
+  .money-grid,
+  .item-money-grid,
+  .select-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .total-field,
+  .item-total {
+    grid-column: auto;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+  }
+}
+
+@media (min-width: 520px) {
+  .item-money-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .item-total {
+    grid-column: auto;
+  }
+}
