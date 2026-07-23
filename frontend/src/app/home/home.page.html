@@ -37,27 +37,32 @@
         </p>
 
         <div class="button-stack">
-          <ion-button
-            class="primary-action"
-            expand="block"
-            [disabled]="isProcessing()"
-            (click)="processReceipt()"
-          >
-            @if (isProcessing()) {
-              <ion-spinner
-                slot="start"
-                name="crescent"
-              ></ion-spinner>
-              Reading receipt…
-            } @else {
-              Analyze receipt
-            }
-          </ion-button>
+          @if (
+            draft() === null &&
+            confirmedReceipt() === null
+          ) {
+            <ion-button
+              class="primary-action"
+              expand="block"
+              [disabled]="isProcessing()"
+              (click)="processReceipt()"
+            >
+              @if (isProcessing()) {
+                <ion-spinner
+                  slot="start"
+                  name="crescent"
+                ></ion-spinner>
+                Reading receipt…
+              } @else {
+                Analyze receipt
+              }
+            </ion-button>
+          }
 
           <ion-button
             expand="block"
             fill="clear"
-            [disabled]="isProcessing()"
+            [disabled]="isProcessing() || isConfirming()"
             (click)="chooseAnother(fileInput)"
           >
             Choose another photo
@@ -95,7 +100,10 @@
               <h2>
                 {{ receiptDraft.merchant_name || 'Unknown merchant' }}
               </h2>
-              <p>{{ formatDate(receiptDraft.purchased_at) }}</p>
+
+              <p>
+                {{ formatDate(receiptDraft.purchased_at) }}
+              </p>
             </div>
 
             <strong class="draft-total">
@@ -124,9 +132,69 @@
             }
           </ion-list>
 
-          <p class="review-note">
-            Review and editing will be added in the next step.
+          @if (receiptDraft.total === null) {
+            <p class="confirm-hint confirm-hint--error">
+              A total is required before this receipt can be saved.
+            </p>
+          } @else {
+            <p class="confirm-hint">
+              Editing comes next. For now, confirm the detected
+              information to verify the full application flow.
+            </p>
+          }
+
+          <ion-button
+            class="confirm-action"
+            expand="block"
+            [disabled]="
+              isConfirming() ||
+              receiptDraft.total === null
+            "
+            (click)="confirmReceipt()"
+          >
+            @if (isConfirming()) {
+              <ion-spinner
+                slot="start"
+                name="crescent"
+              ></ion-spinner>
+              Saving receipt…
+            } @else {
+              Confirm detected receipt
+            }
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    @if (confirmedReceipt(); as receipt) {
+      <ion-card class="success-card">
+        <ion-card-content>
+          <div class="success-mark" aria-hidden="true">
+            ✓
+          </div>
+
+          <p class="eyebrow">Receipt saved</p>
+
+          <h2>
+            {{ receipt.merchant_name || 'Receipt confirmed' }}
+          </h2>
+
+          <strong class="success-total">
+            {{ formatMoney(receipt.total) }}
+          </strong>
+
+          <p class="success-copy">
+            {{ receipt.items.length }}
+            purchase item(s) were saved and the correction
+            sample was linked to the original prediction.
           </p>
+
+          <ion-button
+            expand="block"
+            (click)="chooseAnother(fileInput)"
+          >
+            Scan another receipt
+          </ion-button>
         </ion-card-content>
       </ion-card>
     }
