@@ -10,7 +10,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
-    "start:mobile": "ng serve --proxy-config proxy.conf.json --host=0.0.0.0 --port=8100"
+    "start:mobile": "ng serve --proxy-config proxy.conf.json --host=0.0.0.0 --port=8100",
+    "build:android:debug": "ng build --configuration android-debug"
   },
   "private": true,
   "dependencies": {

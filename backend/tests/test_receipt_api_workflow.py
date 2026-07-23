@@ -262,6 +262,28 @@ class ReceiptAPIWorkflowTests(unittest.TestCase):
         self.assertEqual(first_response.status_code, 200)
         self.assertEqual(second_response.status_code, 409)
 
+    def test_android_origin_preflight_is_allowed(
+        self,
+    ) -> None:
+        response = self.client.options(
+            "/api/receipts/confirm",
+            headers={
+                "Origin": "http://localhost",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": (
+                    "content-type"
+                ),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers[
+                "access-control-allow-origin"
+            ],
+            "http://localhost",
+        )
+
     def test_invalid_requests_return_422(self) -> None:
         empty_image_response = self.client.post(
             "/api/receipts/process",
