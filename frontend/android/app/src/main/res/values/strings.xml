@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">F.A.N.</string>
+    <string name="title_activity_main">F.A.N.</string>
+    <string name="package_name">com.strupsts.fan</string>
+    <string name="custom_url_scheme">com.strupsts.fan</string>
+</resources>
