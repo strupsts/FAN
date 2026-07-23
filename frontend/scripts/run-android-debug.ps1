@@ -59,8 +59,11 @@ $DeviceSerial = $DeviceSerials[0]
 Push-Location $AndroidDirectory
 
 try {
-    & $GradleWrapper testDebugUnitTest assembleDebug
-    Assert-CommandSucceeded "Android debug build"
+    & $GradleWrapper `
+        ":app:testDebugUnitTest" `
+        ":app:connectedDebugAndroidTest" `
+        ":app:assembleDebug"
+    Assert-CommandSucceeded "Android app tests and debug build"
 
     & $Adb `
         -s $DeviceSerial `
