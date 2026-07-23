@@ -1,27 +1,229 @@
-#container {
-  text-align: center;
+ion-toolbar {
+  --border-width: 0;
+}
 
+ion-content {
+  --background: var(--ion-background-color);
+}
+
+.mobile-shell {
+  width: min(100%, 640px);
+  min-height: 100%;
+  margin: 0 auto;
+  padding:
+    20px
+    16px
+    calc(32px + var(--ion-safe-area-bottom, 0px));
+}
+
+.intro {
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--ion-color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 10px;
+  font-size: clamp(2rem, 10vw, 3rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.intro-copy {
+  max-width: 34rem;
+  margin-bottom: 0;
+  color: var(--ion-color-step-600);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.file-input {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
+.upload-panel {
+  display: grid;
+  width: 100%;
+  min-height: 210px;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  padding: 28px 20px;
+  border: 2px dashed var(--ion-color-step-300);
+  border-radius: 24px;
+  background: var(--ion-card-background, var(--ion-item-background));
+  color: var(--ion-text-color);
+  text-align: center;
+  cursor: pointer;
 }
 
-#container p {
-  font-size: 16px;
-  line-height: 22px;
-
-  color: #8c8c8c;
-
-  margin: 0;
+.upload-panel:active {
+  transform: scale(0.99);
 }
 
-#container a {
-  text-decoration: none;
+.upload-panel strong {
+  font-size: 1.05rem;
+}
+
+.upload-panel span:last-child {
+  color: var(--ion-color-step-600);
+  font-size: 0.875rem;
+}
+
+.upload-symbol {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--ion-color-primary);
+  color: var(--ion-color-primary-contrast);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.preview-panel {
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid var(--ion-color-step-200);
+  border-radius: 24px;
+  background: var(--ion-card-background, var(--ion-item-background));
+}
+
+.receipt-preview {
+  display: block;
+  width: 100%;
+  max-height: 48vh;
+  border-radius: 16px;
+  object-fit: contain;
+  background: var(--ion-color-step-100);
+}
+
+.file-name {
+  overflow: hidden;
+  margin: 12px 4px;
+  color: var(--ion-color-step-600);
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.button-stack {
+  display: grid;
+  gap: 4px;
+}
+
+ion-button {
+  min-height: 48px;
+  margin-inline: 0;
+  --border-radius: 16px;
+}
+
+.status-message {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.status-message--error {
+  background: rgba(var(--ion-color-danger-rgb), 0.12);
+  color: var(--ion-color-danger);
+}
+
+.draft-card {
+  margin: 20px 0 0;
+  border-radius: 24px;
+  box-shadow: none;
+}
+
+.draft-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.draft-heading h2 {
+  margin-bottom: 4px;
+  font-size: 1.35rem;
+}
+
+.draft-heading p {
+  margin-bottom: 0;
+  color: var(--ion-color-step-600);
+  font-size: 0.875rem;
+}
+
+.draft-total {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+  white-space: nowrap;
+}
+
+ion-list {
+  margin-inline: -16px;
+  background: transparent;
+}
+
+ion-item {
+  --background: transparent;
+}
+
+.review-note {
+  margin: 16px 0 0;
+  color: var(--ion-color-step-600);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+@media (min-width: 480px) {
+  .mobile-shell {
+    padding-inline: 24px;
+  }
+
+  .preview-panel {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 359px) {
+  .mobile-shell {
+    padding-inline: 12px;
+  }
+
+  .draft-heading {
+    display: block;
+  }
+
+  .draft-total {
+    display: block;
+    margin-top: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upload-panel {
+    transition: none;
+  }
 }

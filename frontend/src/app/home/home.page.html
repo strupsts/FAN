@@ -1,20 +1,134 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
+    <ion-title>F.A.N.</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <main class="mobile-shell">
+    <section class="intro">
+      <p class="eyebrow">Receipt assistant</p>
+      <h1>Scan a receipt</h1>
+      <p class="intro-copy">
+        Take a clear photo or choose one from your gallery.
+        F.A.N. will extract the purchase details for review.
+      </p>
+    </section>
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
-  </div>
+    <input
+      #fileInput
+      class="file-input"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      (change)="onFileSelected($event)"
+    />
+
+    @if (previewUrl(); as preview) {
+      <section class="preview-panel">
+        <img
+          class="receipt-preview"
+          [src]="preview"
+          alt="Selected receipt preview"
+        />
+
+        <p class="file-name">
+          {{ selectedFile()?.name }}
+        </p>
+
+        <div class="button-stack">
+          <ion-button
+            class="primary-action"
+            expand="block"
+            [disabled]="isProcessing()"
+            (click)="processReceipt()"
+          >
+            @if (isProcessing()) {
+              <ion-spinner
+                slot="start"
+                name="crescent"
+              ></ion-spinner>
+              Reading receipt…
+            } @else {
+              Analyze receipt
+            }
+          </ion-button>
+
+          <ion-button
+            expand="block"
+            fill="clear"
+            [disabled]="isProcessing()"
+            (click)="chooseAnother(fileInput)"
+          >
+            Choose another photo
+          </ion-button>
+        </div>
+      </section>
+    } @else {
+      <button
+        class="upload-panel"
+        type="button"
+        (click)="fileInput.click()"
+      >
+        <span class="upload-symbol" aria-hidden="true">+</span>
+        <strong>Take or choose a photo</strong>
+        <span>JPG, PNG, HEIC, or another image format</span>
+      </button>
+    }
+
+    @if (errorMessage(); as error) {
+      <section
+        class="status-message status-message--error"
+        role="alert"
+      >
+        {{ error }}
+      </section>
+    }
+
+    @if (draft(); as receiptDraft) {
+      <ion-card class="draft-card">
+        <ion-card-content>
+          <p class="eyebrow">Detected receipt</p>
+
+          <div class="draft-heading">
+            <div>
+              <h2>
+                {{ receiptDraft.merchant_name || 'Unknown merchant' }}
+              </h2>
+              <p>{{ formatDate(receiptDraft.purchased_at) }}</p>
+            </div>
+
+            <strong class="draft-total">
+              {{ formatMoney(receiptDraft.total) }}
+            </strong>
+          </div>
+
+          <ion-list lines="full">
+            @for (
+              item of receiptDraft.items;
+              track $index
+            ) {
+              <ion-item>
+                <ion-label>
+                  <h3>{{ item.name }}</h3>
+
+                  @if (item.quantity !== null) {
+                    <p>Quantity: {{ item.quantity }}</p>
+                  }
+                </ion-label>
+
+                <strong slot="end">
+                  {{ formatMoney(item.total_price) }}
+                </strong>
+              </ion-item>
+            }
+          </ion-list>
+
+          <p class="review-note">
+            Review and editing will be added in the next step.
+          </p>
+        </ion-card-content>
+      </ion-card>
+    }
+  </main>
 </ion-content>
