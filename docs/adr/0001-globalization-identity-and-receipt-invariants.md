@@ -274,6 +274,27 @@ Verification results:
 
 The implementation was ready for its first source commit at this checkpoint.
 
+### 2026-07-29: User domain foundation completed
+
+The initial user domain foundation was added:
+
+- `User` represents the provider-independent FAN user;
+- `UserPreferences` stores interface language, formatting locale, home country, default receipt currency, reporting currency, time zone, onboarding state, and update timestamp;
+- Google, Apple, OAuth tokens, and provider-specific identities remain outside the core user model;
+- country codes are normalized to two uppercase ASCII letters;
+- currency codes are normalized to three uppercase ASCII letters;
+- user and preference timestamps must be timezone-aware;
+- no implicit Canadian or CAD defaults were introduced into the domain model.
+
+Verification results:
+
+- user preference normalization tests passed;
+- invalid country and currency tests passed;
+- non-ASCII lookalike codes were rejected;
+- naive user timestamps were rejected;
+- backend test suite: 21 tests passed;
+- generated API contracts remained unchanged.
+
 ## Consequences
 
 This decision adds a small amount of schema and contract work before more product screens are built. In exchange, receipts remain stable financial facts while identity, display language, reporting currency, FX providers, and future tax features can evolve independently.

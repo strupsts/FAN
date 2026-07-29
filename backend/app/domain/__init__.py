@@ -3,6 +3,7 @@ from app.domain.correction import Correction, CorrectionMemory
 from app.domain.money import Money
 from app.domain.receipt import ConfirmedReceipt, ReceiptDraft, ReceiptItem
 from app.domain.summary import CategorySpending, MerchantSpending, SpendingSummary
+from app.domain.user import User, UserPreferences
 
 __all__ = [
     "BudgetBucket",
@@ -16,4 +17,6 @@ __all__ = [
     "ReceiptDraft",
     "ReceiptItem",
     "SpendingSummary",
+    "User",
+    "UserPreferences",
 ]
