@@ -229,6 +229,23 @@ Verification results:
 - only `backend/scripts/export_openapi.py` and `frontend/openapi/` were untracked at this checkpoint;
 - the implementation files had not yet been committed.
 
+### 2026-07-29: OpenAPI-to-TypeScript generation verified locally
+
+The user installed `openapi-typescript` `7.13.0` as a frontend development dependency and generated `frontend/src/app/core/api/generated/openapi-types.ts` from the exported OpenAPI document.
+
+Verified results:
+
+- generated TypeScript file: 465 lines;
+- receipt, money, summary, validation, path, and operation types were present;
+- Angular production build succeeded;
+- Angular lint succeeded;
+- backend test suite: 15 tests passed;
+- implementation changes were still uncommitted at this checkpoint.
+
+The generated file is treated as derived output. It must not be edited manually because regeneration replaces its contents. Uncomfortable generated types are corrected at the authoritative backend schema or adapted through a handwritten frontend alias/facade layer.
+
+Dependency-install output also reported 36 npm audit findings and pending install-script approvals. Their production impact has not yet been classified; audit review is required before this implementation block is committed.
+
 ## Consequences
 
 This decision adds a small amount of schema and contract work before more product screens are built. In exchange, receipts remain stable financial facts while identity, display language, reporting currency, FX providers, and future tax features can evolve independently.
