@@ -295,6 +295,44 @@ Verification results:
 - backend test suite: 21 tests passed;
 - generated API contracts remained unchanged.
 
+### 2026-07-29: User persistence and ownership constraints completed
+
+User persistence was added:
+
+- `users` stores provider-independent FAN users;
+- `user_preferences` stores one regional preference record per user;
+- `user_preferences.user_id` is both its primary key and a foreign key to `users.id`;
+- receipts, receipt predictions, and training samples now reference `users.id`;
+- user-owned foreign keys use `ON DELETE CASCADE`;
+- migration revision: `d2604d482290`;
+- previous migration head: `798d68731784`.
+
+The migration preserves existing development data by inserting all distinct
+user identifiers referenced by existing user-owned tables before adding
+foreign-key constraints.
+
+The configured development user
+`00000000-0000-4000-8000-000000000001` is bootstrapped with explicit local
+preferences:
+
+- interface language: `en`;
+- formatting locale: `en-CA`;
+- home country: `CA`;
+- default receipt currency: `CAD`;
+- reporting currency: `CAD`;
+- time zone: `America/Edmonton`;
+- onboarding incomplete.
+
+Verification results:
+
+- database backup was created before migration;
+- migration upgraded successfully to `d2604d482290`;
+- Alembic model/schema check reported no pending operations;
+- all user-owned rows had valid parent users;
+- backend test suite: 24 tests passed;
+- generated API contracts remained unchanged;
+- Ionic/Angular production build succeeded.
+
 ## Consequences
 
 This decision adds a small amount of schema and contract work before more product screens are built. In exchange, receipts remain stable financial facts while identity, display language, reporting currency, FX providers, and future tax features can evolve independently.

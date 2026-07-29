@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4
@@ -26,11 +26,91 @@ class Base(DeclarativeBase):
     pass
 
 
+class UserRow(Base):
+    __tablename__ = "users"
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+    preferences: Mapped[UserPreferencesRow | None] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        single_parent=True,
+        uselist=False,
+    )
+
+
+class UserPreferencesRow(Base):
+    __tablename__ = "user_preferences"
+
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "users.id",
+            ondelete="CASCADE",
+            name="fk_user_preferences_user",
+        ),
+        primary_key=True,
+    )
+
+    interface_language: Mapped[str] = mapped_column(
+        String(35),
+        nullable=False,
+    )
+    formatting_locale: Mapped[str] = mapped_column(
+        String(35),
+        nullable=False,
+    )
+    home_country: Mapped[str] = mapped_column(
+        String(2),
+        nullable=False,
+    )
+    default_receipt_currency: Mapped[str] = mapped_column(
+        String(3),
+        nullable=False,
+    )
+    reporting_currency: Mapped[str] = mapped_column(
+        String(3),
+        nullable=False,
+    )
+    time_zone: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+    onboarding_completed: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+    user: Mapped[UserRow] = relationship(
+        back_populates="preferences",
+    )
+
+
 class ReceiptRow(Base):
     __tablename__ = "receipts"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    user_id: Mapped[UUID] = mapped_column(index=True)
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "users.id",
+            ondelete="CASCADE",
+            name="fk_receipts_user",
+        ),
+        index=True,
+    )
     merchant_name: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
@@ -138,7 +218,14 @@ class ReceiptPredictionRow(Base):
         primary_key=True,
         default=uuid4,
     )
-    user_id: Mapped[UUID] = mapped_column(index=True)
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "users.id",
+            ondelete="CASCADE",
+            name="fk_receipt_predictions_user",
+        ),
+        index=True,
+    )
     receipt_draft_id: Mapped[UUID] = mapped_column(index=True)
 
     image_ref: Mapped[str] = mapped_column(String(1000))
@@ -180,7 +267,14 @@ class TrainingSampleRow(Base):
         primary_key=True,
         default=uuid4,
     )
-    user_id: Mapped[UUID] = mapped_column(index=True)
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "users.id",
+            ondelete="CASCADE",
+            name="fk_training_samples_user",
+        ),
+        index=True,
+    )
     source_prediction_id: Mapped[UUID] = mapped_column(
         ForeignKey(
             "receipt_predictions.id",
