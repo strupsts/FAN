@@ -20,12 +20,16 @@ from app.adapters.outbound.analytics.in_memory_analytics_adapter import (
 from app.adapters.outbound.db.sqlalchemy_models import (
     Base,
     TrainingSampleRow,
+    UserRow,
 )
 from app.adapters.outbound.db.sqlalchemy_prediction_repository import (
     SQLAlchemyPredictionRepository,
 )
 from app.adapters.outbound.db.sqlalchemy_receipt_repository import (
     SQLAlchemyReceiptRepository,
+)
+from app.adapters.outbound.db.sqlalchemy_user_repository import (
+    SQLAlchemyUserRepository,
 )
 from app.adapters.outbound.extraction import (
     FakeReceiptDraftExtractorAdapter,
@@ -64,10 +68,19 @@ class ReceiptAPIWorkflowTests(unittest.TestCase):
             expire_on_commit=False,
         )
 
+        with self.session_factory() as session:
+            session.add(
+                UserRow(id=self.user_id)
+            )
+            session.commit()
+
         receipt_repository = SQLAlchemyReceiptRepository(
             self.session_factory
         )
         prediction_repository = SQLAlchemyPredictionRepository(
+            self.session_factory
+        )
+        user_repository = SQLAlchemyUserRepository(
             self.session_factory
         )
         analytics = InMemoryAnalyticsAdapter()
@@ -93,6 +106,7 @@ class ReceiptAPIWorkflowTests(unittest.TestCase):
             extractor=extractor,
             receipt_repository=receipt_repository,
             prediction_repository=prediction_repository,
+            user_repository=user_repository,
             analytics=analytics,
             privacy=NoopPrivacyAdapter(),
             process_receipt_use_case=process_use_case,

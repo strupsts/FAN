@@ -10,6 +10,9 @@ from app.adapters.outbound.db.sqlalchemy_prediction_repository import (
 from app.adapters.outbound.db.sqlalchemy_receipt_repository import (
     SQLAlchemyReceiptRepository,
 )
+from app.adapters.outbound.db.sqlalchemy_user_repository import (
+    SQLAlchemyUserRepository,
+)
 from app.adapters.outbound.extraction import (
     FakeReceiptDraftExtractorAdapter,
     QwenVLMReceiptDraftExtractorAdapter,
@@ -24,7 +27,7 @@ from app.application import (
 )
 from app.infrastructure.config import get_settings
 from app.infrastructure.database import create_db_engine, create_session_factory
-from app.ports import ReceiptDraftExtractorPort
+from app.ports import ReceiptDraftExtractorPort, UserRepositoryPort
 
 
 @dataclass
@@ -33,6 +36,7 @@ class AppContainer:
     extractor: ReceiptDraftExtractorPort
     receipt_repository: SQLAlchemyReceiptRepository
     prediction_repository: SQLAlchemyPredictionRepository
+    user_repository: UserRepositoryPort
     analytics: InMemoryAnalyticsAdapter
     privacy: NoopPrivacyAdapter
 
@@ -70,6 +74,9 @@ def build_container() -> AppContainer:
     prediction_repository = SQLAlchemyPredictionRepository(
         session_factory=session_factory
     )
+    user_repository = SQLAlchemyUserRepository(
+        session_factory=session_factory
+    )
     analytics = InMemoryAnalyticsAdapter()
     privacy = NoopPrivacyAdapter()
 
@@ -99,6 +106,7 @@ def build_container() -> AppContainer:
         extractor=extractor,
         receipt_repository=receipt_repository,
         prediction_repository=prediction_repository,
+        user_repository=user_repository,
         analytics=analytics,
         privacy=privacy,
         process_receipt_use_case=process_receipt_use_case,

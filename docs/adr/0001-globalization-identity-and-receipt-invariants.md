@@ -359,6 +359,23 @@ Verification results:
 - generated API contracts remained unchanged;
 - the repository has not yet been wired into `AppContainer` or exposed through API endpoints.
 
+### 2026-07-29: User repository container wiring completed
+
+The SQLAlchemy user repository was connected to `AppContainer`:
+
+- `build_container()` creates `SQLAlchemyUserRepository`;
+- the container exposes it through the `UserRepositoryPort` contract;
+- manually constructed test containers were updated atomically;
+- API workflow tests create their current user before exercising user-owned persistence;
+- a dedicated wiring test verifies that the container uses the expected session factory.
+
+Verification results:
+
+- all `AppContainer(...)` construction sites were reviewed;
+- backend test suite: 30 tests passed;
+- Alembic reported no pending schema operations;
+- generated API contracts remained unchanged.
+
 ## Consequences
 
 This decision adds a small amount of schema and contract work before more product screens are built. In exchange, receipts remain stable financial facts while identity, display language, reporting currency, FX providers, and future tax features can evolve independently.
