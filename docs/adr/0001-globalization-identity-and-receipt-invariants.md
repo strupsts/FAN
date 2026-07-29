@@ -158,6 +158,23 @@ FastAPI OpenAPI output is used to generate frontend TypeScript request and respo
 
 The Angular API service may remain handwritten initially, but duplicated handwritten interface definitions are phased out. Generated files are reproducible and checked for drift in development or CI.
 
+## Project workflow agreement
+
+The assistant may read and analyze the repository through GitHub. The assistant may independently modify only this ADR file so that approved architectural decisions and verified implementation milestones remain recoverable in later conversations.
+
+All other repository writes are performed manually by the user from explicit instructions. This includes:
+
+- creating or deleting branches;
+- creating or editing source files;
+- generating migrations;
+- installing dependencies;
+- staging changes;
+- committing;
+- pushing;
+- merging.
+
+Unapproved proposals and unverified assumptions must not be recorded as completed work. The implementation journal records meaningful decisions and verified milestones rather than every terminal command.
+
 ## Out of scope for this decision
 
 - country-by-country tax rates or legal tax advice;
@@ -180,6 +197,37 @@ The Angular API service may remain handwritten initially, but duplicated handwri
 8. Build Summary grouped by original currency.
 9. Add FX ports, conversion snapshots, retries, and reporting-currency Summary.
 10. Add production authentication before external beta.
+
+## Implementation journal
+
+### 2026-07-29: Globalization branch and ADR
+
+- Working branch: `feat/globalization-foundation`.
+- Globalization, identity, currency, tax-reconciliation, localization, and API-contract invariants were accepted in this ADR.
+
+### 2026-07-29: OpenAPI export foundation verified locally
+
+The user created `backend/scripts/export_openapi.py`. It imports `create_app()`, calls `app.openapi()`, and writes deterministic formatted JSON to `frontend/openapi/openapi.json`.
+
+Verified generated schema:
+
+- OpenAPI version: `3.1.0`;
+- API title: `F.A.N. API`;
+- exported paths: 6;
+- `/api/receipts/confirm`;
+- `/api/receipts/history`;
+- `/api/receipts/process`;
+- `/api/receipts/summary`;
+- `/health`;
+- `/health/db`.
+
+Verification results:
+
+- generated JSON parsed successfully;
+- backend test suite: 15 tests passed;
+- Ionic/Angular production build succeeded;
+- only `backend/scripts/export_openapi.py` and `frontend/openapi/` were untracked at this checkpoint;
+- the implementation files had not yet been committed.
 
 ## Consequences
 
