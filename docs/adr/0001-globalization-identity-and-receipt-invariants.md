@@ -333,6 +333,32 @@ Verification results:
 - generated API contracts remained unchanged;
 - Ionic/Angular production build succeeded.
 
+### 2026-07-29: User repository boundary completed
+
+A persistence boundary for users and regional preferences was added:
+
+- `UserRepositoryPort` defines provider-independent user persistence operations;
+- the port supports reading users, reading preferences, and creating or updating preferences;
+- `SQLAlchemyUserRepository` implements the port using the existing `users` and `user_preferences` tables;
+- missing users are represented by `UserNotFoundError` when saving preferences;
+- persistence timestamps are normalized to timezone-aware UTC values before entering the domain;
+- application and domain code remain independent from SQLAlchemy.
+
+Repository adapter tests verify:
+
+- reading a user and preferences;
+- missing records return `None`;
+- preferences can be created and updated;
+- preferences cannot be created for a missing user;
+- updating one user does not affect another user.
+
+Verification results:
+
+- backend test suite: 29 tests passed;
+- Alembic reported no pending schema operations;
+- generated API contracts remained unchanged;
+- the repository has not yet been wired into `AppContainer` or exposed through API endpoints.
+
 ## Consequences
 
 This decision adds a small amount of schema and contract work before more product screens are built. In exchange, receipts remain stable financial facts while identity, display language, reporting currency, FX providers, and future tax features can evolve independently.

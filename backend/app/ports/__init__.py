@@ -20,6 +20,7 @@ from app.ports.receipt_draft_extractor import (
     ReceiptExtractorUnavailableError,
 )
 from app.ports.receipt_repository import ReceiptRepositoryPort
+from app.ports.user_repository import UserNotFoundError, UserRepositoryPort
 
 __all__ = [
     "AnalyticsEvent",
@@ -40,4 +41,6 @@ __all__ = [
     "ReceiptRepositoryPort",
     "StoredImage",
     "TrainingSample",
+    "UserNotFoundError",
+    "UserRepositoryPort",
 ]
