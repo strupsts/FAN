@@ -11,7 +11,8 @@
     "test": "ng test",
     "lint": "ng lint",
     "start:mobile": "ng serve --proxy-config proxy.conf.json --host=0.0.0.0 --port=8100",
-    "build:android:debug": "ng build --configuration android-debug"
+    "build:android:debug": "ng build --configuration android-debug",
+    "api:types": "openapi-typescript openapi/openapi.json -o src/app/core/api/generated/openapi-types.ts"
   },
   "private": true,
   "dependencies": {
@@ -61,6 +62,7 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "openapi-typescript": "^7.13.0",
     "typescript": "~5.9.0"
   },
   "description": "An Ionic project"

@@ -160,18 +160,23 @@ The Angular API service may remain handwritten initially, but duplicated handwri
 
 ## Project workflow agreement
 
-The assistant may read and analyze the repository through GitHub. The assistant may independently modify only this ADR file so that approved architectural decisions and verified implementation milestones remain recoverable in later conversations.
+The assistant may read and analyze the repository through GitHub but does not write directly to active GitHub branches.
 
-All other repository writes are performed manually by the user from explicit instructions. This includes:
+All repository changes are performed locally by the user from explicit instructions, including ADR updates. The assistant supplies the ADR patch or command together with the related implementation instructions so that documentation and code can be committed atomically.
+
+This includes:
 
 - creating or deleting branches;
 - creating or editing source files;
+- updating this ADR;
 - generating migrations;
 - installing dependencies;
 - staging changes;
 - committing;
 - pushing;
 - merging.
+
+This prevents the remote branch from moving ahead while the user has local work and avoids unnecessary pulls or merge conflicts.
 
 Unapproved proposals and unverified assumptions must not be recorded as completed work. The implementation journal records meaningful decisions and verified milestones rather than every terminal command.
 
@@ -245,6 +250,29 @@ Verified results:
 The generated file is treated as derived output. It must not be edited manually because regeneration replaces its contents. Uncomfortable generated types are corrected at the authoritative backend schema or adapted through a handwritten frontend alias/facade layer.
 
 Dependency-install output also reported 36 npm audit findings and pending install-script approvals. Their production impact has not yet been classified; audit review is required before this implementation block is committed.
+
+### 2026-07-29: OpenAPI-to-TypeScript generation completed
+
+The API contract generation pipeline was implemented locally:
+
+- `backend/scripts/export_openapi.py` exports deterministic FastAPI OpenAPI JSON;
+- `frontend/openapi/openapi.json` stores the generated schema;
+- `openapi-typescript` version `7.13.0` generates frontend TypeScript definitions;
+- `frontend/package.json` provides the `api:types` command;
+- the Makefile provides `api-schema`, `frontend-api-types`, `api-contracts`, and `api-contracts-check`;
+- the generated TypeScript file contains 465 lines at this checkpoint.
+
+Verification results:
+
+- two consecutive generations produced identical SHA-256 hashes;
+- production dependency audit reported zero vulnerabilities;
+- the full development dependency audit reported 36 issues;
+- no forced dependency upgrade was applied because it could introduce breaking changes;
+- backend test suite: 15 tests passed;
+- Ionic/Angular production build succeeded;
+- frontend lint succeeded.
+
+The implementation was ready for its first source commit at this checkpoint.
 
 ## Consequences
 

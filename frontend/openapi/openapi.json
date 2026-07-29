@@ -1,0 +1,830 @@
+{
+  "components": {
+    "schemas": {
+      "Body_process_receipt_api_receipts_process_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_process_receipt_api_receipts_process_post",
+        "type": "object"
+      },
+      "BudgetBucket": {
+        "enum": [
+          "needs",
+          "wants",
+          "savings",
+          "debt",
+          "unknown"
+        ],
+        "title": "BudgetBucket",
+        "type": "string"
+      },
+      "Category": {
+        "enum": [
+          "groceries",
+          "restaurants",
+          "transport",
+          "auto",
+          "household",
+          "health",
+          "personal_care",
+          "entertainment",
+          "clothing",
+          "electronics",
+          "tools",
+          "fees",
+          "tax",
+          "discount",
+          "other",
+          "unknown"
+        ],
+        "title": "Category",
+        "type": "string"
+      },
+      "CategorySpendingResponse": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "total": {
+            "$ref": "#/components/schemas/MoneyResponse"
+          },
+          "transaction_count": {
+            "title": "Transaction Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "total",
+          "transaction_count"
+        ],
+        "title": "CategorySpendingResponse",
+        "type": "object"
+      },
+      "ConfirmReceiptRequest": {
+        "properties": {
+          "draft_id": {
+            "format": "uuid",
+            "title": "Draft Id",
+            "type": "string"
+          },
+          "image_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Ref"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReceiptItemRequest"
+            },
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "merchant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant Name"
+          },
+          "purchased_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchased At"
+          },
+          "subtotal_amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtotal Amount"
+          },
+          "subtotal_currency": {
+            "default": "CAD",
+            "title": "Subtotal Currency",
+            "type": "string"
+          },
+          "tax_amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Amount"
+          },
+          "tax_currency": {
+            "default": "CAD",
+            "title": "Tax Currency",
+            "type": "string"
+          },
+          "total_amount": {
+            "title": "Total Amount",
+            "type": "string"
+          },
+          "total_currency": {
+            "default": "CAD",
+            "title": "Total Currency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "draft_id",
+          "total_amount",
+          "items"
+        ],
+        "title": "ConfirmReceiptRequest",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "MerchantSpendingResponse": {
+        "properties": {
+          "merchant_name": {
+            "title": "Merchant Name",
+            "type": "string"
+          },
+          "total": {
+            "$ref": "#/components/schemas/MoneyResponse"
+          },
+          "transaction_count": {
+            "title": "Transaction Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "merchant_name",
+          "total",
+          "transaction_count"
+        ],
+        "title": "MerchantSpendingResponse",
+        "type": "object"
+      },
+      "MoneyResponse": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "currency"
+        ],
+        "title": "MoneyResponse",
+        "type": "object"
+      },
+      "ReceiptDraftResponse": {
+        "properties": {
+          "extractor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extractor Name"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "image_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Ref"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReceiptItemResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "merchant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant Name"
+          },
+          "purchased_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchased At"
+          },
+          "subtotal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tax": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "merchant_name",
+          "purchased_at",
+          "subtotal",
+          "tax",
+          "total",
+          "image_ref",
+          "extractor_name",
+          "items"
+        ],
+        "title": "ReceiptDraftResponse",
+        "type": "object"
+      },
+      "ReceiptItemRequest": {
+        "properties": {
+          "bucket": {
+            "$ref": "#/components/schemas/BudgetBucket",
+            "default": "unknown"
+          },
+          "category": {
+            "$ref": "#/components/schemas/Category",
+            "default": "unknown"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "total_price_amount": {
+            "title": "Total Price Amount",
+            "type": "string"
+          },
+          "total_price_currency": {
+            "default": "CAD",
+            "title": "Total Price Currency",
+            "type": "string"
+          },
+          "unit_price_amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price Amount"
+          },
+          "unit_price_currency": {
+            "default": "CAD",
+            "title": "Unit Price Currency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "total_price_amount"
+        ],
+        "title": "ReceiptItemRequest",
+        "type": "object"
+      },
+      "ReceiptItemResponse": {
+        "properties": {
+          "bucket": {
+            "title": "Bucket",
+            "type": "string"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "total_price": {
+            "$ref": "#/components/schemas/MoneyResponse"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "total_price",
+          "category",
+          "bucket"
+        ],
+        "title": "ReceiptItemResponse",
+        "type": "object"
+      },
+      "ReceiptResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "image_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Ref"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReceiptItemResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "merchant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant Name"
+          },
+          "purchased_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchased At"
+          },
+          "subtotal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tax": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoneyResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total": {
+            "$ref": "#/components/schemas/MoneyResponse"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "merchant_name",
+          "purchased_at",
+          "subtotal",
+          "tax",
+          "total",
+          "image_ref",
+          "items"
+        ],
+        "title": "ReceiptResponse",
+        "type": "object"
+      },
+      "SpendingSummaryResponse": {
+        "properties": {
+          "by_category": {
+            "items": {
+              "$ref": "#/components/schemas/CategorySpendingResponse"
+            },
+            "title": "By Category",
+            "type": "array"
+          },
+          "by_merchant": {
+            "items": {
+              "$ref": "#/components/schemas/MerchantSpendingResponse"
+            },
+            "title": "By Merchant",
+            "type": "array"
+          },
+          "from_date": {
+            "title": "From Date",
+            "type": "string"
+          },
+          "to_date": {
+            "title": "To Date",
+            "type": "string"
+          },
+          "total_spent": {
+            "$ref": "#/components/schemas/MoneyResponse"
+          }
+        },
+        "required": [
+          "from_date",
+          "to_date",
+          "total_spent",
+          "by_category",
+          "by_merchant"
+        ],
+        "title": "SpendingSummaryResponse",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "F.A.N. API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/receipts/confirm": {
+      "post": {
+        "operationId": "confirm_receipt_api_receipts_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmReceiptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Receipt",
+        "tags": [
+          "receipts"
+        ]
+      }
+    },
+    "/api/receipts/history": {
+      "get": {
+        "operationId": "get_receipt_history_api_receipts_history_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReceiptResponse"
+                  },
+                  "title": "Response Get Receipt History Api Receipts History Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Receipt History",
+        "tags": [
+          "receipts"
+        ]
+      }
+    },
+    "/api/receipts/process": {
+      "post": {
+        "operationId": "process_receipt_api_receipts_process_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_process_receipt_api_receipts_process_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptDraftResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Process Receipt",
+        "tags": [
+          "receipts"
+        ]
+      }
+    },
+    "/api/receipts/summary": {
+      "get": {
+        "operationId": "get_receipt_summary_api_receipts_summary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from_date",
+            "required": true,
+            "schema": {
+              "title": "From Date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to_date",
+            "required": true,
+            "schema": {
+              "title": "To Date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendingSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Receipt Summary",
+        "tags": [
+          "receipts"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Check Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health Check"
+      }
+    },
+    "/health/db": {
+      "get": {
+        "operationId": "database_health_check_health_db_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Database Health Check"
+      }
+    }
+  }
+}

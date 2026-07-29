@@ -4,7 +4,7 @@ BACKEND_DIR := backend
 PYTHON := $(BACKEND_DIR)/.venv/bin/python
 PIP := $(PYTHON) -m pip
 
-.PHONY: help setup api db-up db-down db-logs db-clear health health-db vlm-health vlm-serve vlm-sample process api-e2e api-e2e-clean test smoke status clean-pyc frontend frontend-build frontend-lint android-debug-sync dev dev-down dev-status dev-logs db-upgrade db-downgrade db-current db-check db-revision db-stamp
+.PHONY: help setup api db-up db-down db-logs db-clear health health-db vlm-health vlm-serve vlm-sample process api-e2e api-e2e-clean test smoke status clean-pyc frontend frontend-build frontend-lint android-debug-sync dev dev-down dev-status dev-logs db-upgrade db-downgrade db-current db-check db-revision db-stamp api-schema frontend-api-types api-contracts api-contracts-check
 
 help:
 > @echo "F.A.N. dev commands:"
@@ -15,6 +15,10 @@ help:
 > @echo "  make dev-logs   Follow API and VLM logs"
 > @echo "  make setup      Create/update WSL backend venv and install dependencies"
 > @echo "  make api        Start FastAPI dev server"
+> @echo "  make api-schema Export FastAPI OpenAPI schema"
+> @echo "  make frontend-api-types Generate frontend API types"
+> @echo "  make api-contracts Regenerate schema and frontend types"
+> @echo "  make api-contracts-check Check generated API contract drift"
 > @echo "  make frontend   Start Ionic frontend dev server"
 > @echo "  make frontend-build Build Ionic frontend"
 > @echo "  make frontend-lint  Lint Ionic frontend"
@@ -63,6 +67,20 @@ setup:
 
 api:
 > cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/uvicorn app.main:app --reload
+
+api-schema:
+> cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/python scripts/export_openapi.py
+
+frontend-api-types:
+> bash -c 'export NVM_DIR="$$HOME/.nvm"; . "$$NVM_DIR/nvm.sh"; cd frontend; nvm use --silent; npm run api:types'
+
+api-contracts:
+> $(MAKE) api-schema
+> $(MAKE) frontend-api-types
+
+api-contracts-check:
+> $(MAKE) api-contracts
+> git diff --exit-code -- frontend/openapi/openapi.json frontend/src/app/core/api/generated/openapi-types.ts
 
 frontend:
 > bash -c 'export NVM_DIR="$$HOME/.nvm"; . "$$NVM_DIR/nvm.sh"; cd frontend; nvm use --silent; exec npm run start:mobile'
