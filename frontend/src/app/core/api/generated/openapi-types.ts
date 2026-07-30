@@ -72,6 +72,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Current User Profile */
+        get: operations["get_current_user_profile_api_users_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/me/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set Current User Preferences */
+        put: operations["set_current_user_preferences_api_users_me_preferences_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -169,6 +203,20 @@ export interface components {
              * @default CAD
              */
             total_currency: string;
+        };
+        /** CurrentUserProfileResponse */
+        CurrentUserProfileResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            preferences: components["schemas"]["UserPreferencesResponse"] | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -268,6 +316,23 @@ export interface components {
             /** User Id */
             user_id: string;
         };
+        /** SetUserPreferencesRequest */
+        SetUserPreferencesRequest: {
+            /** Default Receipt Currency */
+            default_receipt_currency: string;
+            /** Formatting Locale */
+            formatting_locale: string;
+            /** Home Country */
+            home_country: string;
+            /** Interface Language */
+            interface_language: string;
+            /** Onboarding Completed */
+            onboarding_completed: boolean;
+            /** Reporting Currency */
+            reporting_currency: string;
+            /** Time Zone */
+            time_zone: string;
+        };
         /** SpendingSummaryResponse */
         SpendingSummaryResponse: {
             /** By Category */
@@ -279,6 +344,33 @@ export interface components {
             /** To Date */
             to_date: string;
             total_spent: components["schemas"]["MoneyResponse"];
+        };
+        /** UserPreferencesResponse */
+        UserPreferencesResponse: {
+            /** Default Receipt Currency */
+            default_receipt_currency: string;
+            /** Formatting Locale */
+            formatting_locale: string;
+            /** Home Country */
+            home_country: string;
+            /** Interface Language */
+            interface_language: string;
+            /** Onboarding Completed */
+            onboarding_completed: boolean;
+            /** Reporting Currency */
+            reporting_currency: string;
+            /** Time Zone */
+            time_zone: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -407,6 +499,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SpendingSummaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_current_user_profile_api_users_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentUserProfileResponse"];
+                };
+            };
+        };
+    };
+    set_current_user_preferences_api_users_me_preferences_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetUserPreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPreferencesResponse"];
                 };
             };
             /** @description Validation Error */

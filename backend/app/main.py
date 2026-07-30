@@ -9,6 +9,9 @@ from app.adapters.inbound.api.routes.health_routes import (
 from app.adapters.inbound.api.routes.receipt_routes import (
     router as receipt_router,
 )
+from app.adapters.inbound.api.routes.user_routes import (
+    router as user_router,
+)
 
 
 LOCAL_APP_ORIGINS = [
@@ -28,6 +31,7 @@ def create_app() -> FastAPI:
         allow_methods=[
             "GET",
             "POST",
+            "PUT",
             "OPTIONS",
         ],
         allow_headers=["*"],
@@ -35,6 +39,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(receipt_router)
+    app.include_router(user_router)
 
     return app
 

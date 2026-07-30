@@ -6,6 +6,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from starlette.concurrency import run_in_threadpool
 
+from app.adapters.inbound.api.dependencies import (
+    get_container,
+    get_current_user_id,
+)
 from app.adapters.inbound.api.routes.receipt_schemas import (
     ConfirmReceiptRequest,
     ReceiptDraftResponse,
@@ -17,7 +21,7 @@ from app.adapters.inbound.api.routes.receipt_schemas import (
 )
 from app.application import ConfirmReceiptCommand, ProcessReceiptCommand
 from app.domain import Money
-from app.infrastructure import AppContainer, build_container, get_settings
+from app.infrastructure import AppContainer
 from app.ports import (
     InvalidReceiptImageError,
     ReceiptDraftAlreadyConfirmedError,
@@ -29,19 +33,6 @@ from app.ports import (
 
 
 router = APIRouter(prefix="/api/receipts", tags=["receipts"])
-
-_container = build_container()
-
-# Temporary fake user until auth is added.
-_FAKE_USER_ID = get_settings().dev_user_id
-
-
-def get_container() -> AppContainer:
-    return _container
-
-
-def get_current_user_id() -> UUID:
-    return _FAKE_USER_ID
 
 
 @router.post("/process", response_model=ReceiptDraftResponse)

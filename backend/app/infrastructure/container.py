@@ -21,9 +21,11 @@ from app.adapters.outbound.privacy.noop_privacy_adapter import NoopPrivacyAdapte
 from app.adapters.outbound.storage.local_image_storage import LocalImageStorageAdapter
 from app.application import (
     ConfirmReceiptUseCase,
+    GetCurrentUserProfileUseCase,
     GetReceiptHistoryUseCase,
     GetSpendingSummaryUseCase,
     ProcessReceiptUseCase,
+    SetUserPreferencesUseCase,
 )
 from app.infrastructure.config import get_settings
 from app.infrastructure.database import create_db_engine, create_session_factory
@@ -39,6 +41,9 @@ class AppContainer:
     user_repository: UserRepositoryPort
     analytics: InMemoryAnalyticsAdapter
     privacy: NoopPrivacyAdapter
+
+    get_current_user_profile_use_case: GetCurrentUserProfileUseCase
+    set_user_preferences_use_case: SetUserPreferencesUseCase
 
     process_receipt_use_case: ProcessReceiptUseCase
     confirm_receipt_use_case: ConfirmReceiptUseCase
@@ -80,6 +85,17 @@ def build_container() -> AppContainer:
     analytics = InMemoryAnalyticsAdapter()
     privacy = NoopPrivacyAdapter()
 
+    get_current_user_profile_use_case = (
+        GetCurrentUserProfileUseCase(
+            user_repository=user_repository,
+        )
+    )
+    set_user_preferences_use_case = (
+        SetUserPreferencesUseCase(
+            user_repository=user_repository,
+        )
+    )
+
     process_receipt_use_case = ProcessReceiptUseCase(
         image_storage=image_storage,
         extractor=extractor,
@@ -109,6 +125,12 @@ def build_container() -> AppContainer:
         user_repository=user_repository,
         analytics=analytics,
         privacy=privacy,
+        get_current_user_profile_use_case=(
+            get_current_user_profile_use_case
+        ),
+        set_user_preferences_use_case=(
+            set_user_preferences_use_case
+        ),
         process_receipt_use_case=process_receipt_use_case,
         confirm_receipt_use_case=confirm_receipt_use_case,
         get_receipt_history_use_case=get_receipt_history_use_case,

@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.adapters.inbound.api.routes.receipt_routes import (
+from app.adapters.inbound.api.dependencies import (
     get_container,
     get_current_user_id,
 )
@@ -42,9 +42,11 @@ from app.adapters.outbound.storage.local_image_storage import (
 )
 from app.application import (
     ConfirmReceiptUseCase,
+    GetCurrentUserProfileUseCase,
     GetReceiptHistoryUseCase,
     GetSpendingSummaryUseCase,
     ProcessReceiptUseCase,
+    SetUserPreferencesUseCase,
 )
 from app.infrastructure.container import AppContainer
 from app.main import create_app
@@ -109,6 +111,16 @@ class ReceiptAPIWorkflowTests(unittest.TestCase):
             user_repository=user_repository,
             analytics=analytics,
             privacy=NoopPrivacyAdapter(),
+            get_current_user_profile_use_case=(
+                GetCurrentUserProfileUseCase(
+                    user_repository=user_repository,
+                )
+            ),
+            set_user_preferences_use_case=(
+                SetUserPreferencesUseCase(
+                    user_repository=user_repository,
+                )
+            ),
             process_receipt_use_case=process_use_case,
             confirm_receipt_use_case=confirm_use_case,
             get_receipt_history_use_case=GetReceiptHistoryUseCase(

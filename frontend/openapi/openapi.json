@@ -169,6 +169,37 @@
         "title": "ConfirmReceiptRequest",
         "type": "object"
       },
+      "CurrentUserProfileResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "preferences": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserPreferencesResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "preferences"
+        ],
+        "title": "CurrentUserProfileResponse",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -544,6 +575,62 @@
         "title": "ReceiptResponse",
         "type": "object"
       },
+      "SetUserPreferencesRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "default_receipt_currency": {
+            "maxLength": 3,
+            "minLength": 3,
+            "pattern": "^[A-Za-z]{3}$",
+            "title": "Default Receipt Currency",
+            "type": "string"
+          },
+          "formatting_locale": {
+            "minLength": 1,
+            "title": "Formatting Locale",
+            "type": "string"
+          },
+          "home_country": {
+            "maxLength": 2,
+            "minLength": 2,
+            "pattern": "^[A-Za-z]{2}$",
+            "title": "Home Country",
+            "type": "string"
+          },
+          "interface_language": {
+            "minLength": 1,
+            "title": "Interface Language",
+            "type": "string"
+          },
+          "onboarding_completed": {
+            "title": "Onboarding Completed",
+            "type": "boolean"
+          },
+          "reporting_currency": {
+            "maxLength": 3,
+            "minLength": 3,
+            "pattern": "^[A-Za-z]{3}$",
+            "title": "Reporting Currency",
+            "type": "string"
+          },
+          "time_zone": {
+            "minLength": 1,
+            "title": "Time Zone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "interface_language",
+          "formatting_locale",
+          "home_country",
+          "default_receipt_currency",
+          "reporting_currency",
+          "time_zone",
+          "onboarding_completed"
+        ],
+        "title": "SetUserPreferencesRequest",
+        "type": "object"
+      },
       "SpendingSummaryResponse": {
         "properties": {
           "by_category": {
@@ -580,6 +667,61 @@
           "by_merchant"
         ],
         "title": "SpendingSummaryResponse",
+        "type": "object"
+      },
+      "UserPreferencesResponse": {
+        "properties": {
+          "default_receipt_currency": {
+            "title": "Default Receipt Currency",
+            "type": "string"
+          },
+          "formatting_locale": {
+            "title": "Formatting Locale",
+            "type": "string"
+          },
+          "home_country": {
+            "title": "Home Country",
+            "type": "string"
+          },
+          "interface_language": {
+            "title": "Interface Language",
+            "type": "string"
+          },
+          "onboarding_completed": {
+            "title": "Onboarding Completed",
+            "type": "boolean"
+          },
+          "reporting_currency": {
+            "title": "Reporting Currency",
+            "type": "string"
+          },
+          "time_zone": {
+            "title": "Time Zone",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "interface_language",
+          "formatting_locale",
+          "home_country",
+          "default_receipt_currency",
+          "reporting_currency",
+          "time_zone",
+          "onboarding_completed",
+          "updated_at"
+        ],
+        "title": "UserPreferencesResponse",
         "type": "object"
       },
       "ValidationError": {
@@ -785,6 +927,68 @@
         "summary": "Get Receipt Summary",
         "tags": [
           "receipts"
+        ]
+      }
+    },
+    "/api/users/me": {
+      "get": {
+        "operationId": "get_current_user_profile_api_users_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Current User Profile",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/users/me/preferences": {
+      "put": {
+        "operationId": "set_current_user_preferences_api_users_me_preferences_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserPreferencesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferencesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Current User Preferences",
+        "tags": [
+          "users"
         ]
       }
     },

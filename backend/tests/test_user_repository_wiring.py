@@ -53,6 +53,18 @@ class UserRepositoryWiringTests(unittest.TestCase):
                 container.user_repository.session_factory,
                 session_factory,
             )
+            self.assertIs(
+                container
+                .get_current_user_profile_use_case
+                .user_repository,
+                container.user_repository,
+            )
+            self.assertIs(
+                container
+                .set_user_preferences_use_case
+                .user_repository,
+                container.user_repository,
+            )
         finally:
             engine.dispose()
 
