@@ -13,6 +13,9 @@ export type SupportedLanguage =
 
 export const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
 
+export const INTERFACE_LANGUAGE_STORAGE_KEY =
+  'fan.interface_language';
+
 const RTL_LANGUAGE_CODES = new Set([
   'ar',
   'fa',
@@ -29,9 +32,14 @@ export class LocalizationService {
   private readonly transloco = inject(TranslocoService);
 
   initialize(
-    language: string | null | undefined = DEFAULT_LANGUAGE,
+    language?: string | null,
   ): SupportedLanguage {
-    return this.setLanguage(language);
+    const initialLanguage =
+      language
+      ?? this.readStoredLanguage()
+      ?? DEFAULT_LANGUAGE;
+
+    return this.setLanguage(initialLanguage);
   }
 
   setLanguage(
@@ -64,7 +72,35 @@ export class LocalizationService {
         : 'ltr',
     );
 
+    this.persistLanguage(activeLanguage);
+
     return activeLanguage;
+  }
+
+  private readStoredLanguage(): string | null {
+    try {
+      return (
+        this.document.defaultView?.localStorage.getItem(
+          INTERFACE_LANGUAGE_STORAGE_KEY,
+        )
+        ?? null
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  private persistLanguage(
+    language: SupportedLanguage,
+  ): void {
+    try {
+      this.document.defaultView?.localStorage.setItem(
+        INTERFACE_LANGUAGE_STORAGE_KEY,
+        language,
+      );
+    } catch {
+      return;
+    }
   }
 
   private isSupportedLanguage(
