@@ -1,5 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
+
+import {
+  LocalizationService,
+} from './core/i18n/localization.service';
 
 @Component({
   selector: 'app-root',
@@ -7,5 +11,11 @@ import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
   imports: [IonApp, IonRouterOutlet],
 })
 export class AppComponent {
-  constructor() {}
+  private readonly localization = inject(
+    LocalizationService,
+  );
+
+  constructor() {
+    this.localization.initialize();
+  }
 }
