@@ -376,6 +376,39 @@ Verification results:
 - Alembic reported no pending schema operations;
 - generated API contracts remained unchanged.
 
+### 2026-07-29: Current-user application boundary completed
+
+The application layer now exposes provider-independent current-user
+operations:
+
+- `GetCurrentUserProfileUseCase` returns the current user together with
+  optional preferences;
+- a user may exist before regional preferences have been initialized;
+- `SetUserPreferencesCommand` carries the complete regional preference set;
+- `SetUserPreferencesUseCase` creates or replaces preferences through
+  `UserRepositoryPort`;
+- the resolved user identifier is supplied by the current-user boundary
+  rather than accepted from client preference data;
+- repository-specific missing-user errors are translated into the
+  application-level `CurrentUserNotFoundError`;
+- the server controls the preferences update timestamp.
+
+Use-case tests verify:
+
+- reading a user with preferences;
+- reading a user before preferences exist;
+- rejecting a missing current user;
+- preference normalization;
+- creating and updating preferences;
+- two-user isolation.
+
+Verification results:
+
+- backend test suite: 36 tests passed;
+- Alembic reported no pending schema operations;
+- generated API contracts remained unchanged;
+- no HTTP routes or container wiring were added in this milestone.
+
 ## Consequences
 
 This decision adds a small amount of schema and contract work before more product screens are built. In exchange, receipts remain stable financial facts while identity, display language, reporting currency, FX providers, and future tax features can evolve independently.
