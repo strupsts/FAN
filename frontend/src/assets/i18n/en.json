@@ -1,5 +1,37 @@
 {
   "app": {
     "name": "F.A.N."
+  },
+  "home": {
+    "eyebrow": "Receipt assistant",
+    "heading": "Scan a receipt",
+    "introduction": "Take a clear photo or choose one from your gallery. F.A.N. will extract the purchase details for review.",
+    "receiptPreviewAlt": "Selected receipt preview",
+    "processing": "Reading receipt…",
+    "analyze": "Analyze receipt",
+    "chooseAnother": "Choose another photo",
+    "uploadAction": "Take or choose a photo",
+    "supportedFormats": "JPG, PNG, HEIC, or another image format",
+    "success": {
+      "eyebrow": "Receipt saved",
+      "missingMerchant": "Receipt confirmed",
+      "savedItems": {
+        "one": "{{ count }} purchase item was saved, and the correction sample was linked to the original prediction.",
+        "few": "{{ count }} purchase items were saved, and the correction sample was linked to the original prediction.",
+        "many": "{{ count }} purchase items were saved, and the correction sample was linked to the original prediction.",
+        "other": "{{ count }} purchase items were saved, and the correction sample was linked to the original prediction."
+      },
+      "scanAnother": "Scan another receipt"
+    },
+    "errors": {
+      "unsupportedFile": "Choose a JPG, PNG, HEIC, or another image file.",
+      "requestFailed": "The receipt request failed.",
+      "backendUnavailable": "The backend is unavailable. Check that make dev is running.",
+      "draftNotFound": "The original receipt draft could not be found.",
+      "alreadyConfirmed": "This receipt draft has already been confirmed.",
+      "invalidReceipt": "The receipt contains missing or invalid information.",
+      "modelStarting": "The receipt model is starting. Try again in a few seconds.",
+      "httpFallback": "The receipt request failed."
+    }
   }
 }

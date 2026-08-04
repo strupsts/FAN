@@ -5,6 +5,7 @@ import {
   OnDestroy,
   signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   IonButton,
   IonCard,
@@ -15,6 +16,10 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/angular/standalone';
+import {
+  TranslocoPipe,
+  TranslocoService,
+} from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 
 import { ReceiptApiService } from '../core/api/receipt-api.service';
@@ -27,6 +32,36 @@ import {
 import {
   ReceiptReviewFormComponent,
 } from '../features/receipt-review/receipt-review-form.component';
+
+const HOME_ERROR_KEYS = {
+  unsupportedFile: 'home.errors.unsupportedFile',
+  requestFailed: 'home.errors.requestFailed',
+  backendUnavailable: 'home.errors.backendUnavailable',
+  draftNotFound: 'home.errors.draftNotFound',
+  alreadyConfirmed: 'home.errors.alreadyConfirmed',
+  invalidReceipt: 'home.errors.invalidReceipt',
+  modelStarting: 'home.errors.modelStarting',
+  httpFallback: 'home.errors.httpFallback',
+} as const;
+
+type HomeErrorKey =
+  (typeof HOME_ERROR_KEYS)[keyof typeof HOME_ERROR_KEYS];
+
+type HomeError =
+  | {
+    kind: 'translation';
+    key: HomeErrorKey;
+  }
+  | {
+    kind: 'detail';
+    detail: string;
+  };
+
+type ItemPluralTranslationKey =
+  | 'home.success.savedItems.one'
+  | 'home.success.savedItems.few'
+  | 'home.success.savedItems.many'
+  | 'home.success.savedItems.other';
 
 @Component({
   selector: 'app-home',
@@ -42,10 +77,18 @@ import {
     IonSpinner,
     IonTitle,
     IonToolbar,
+    TranslocoPipe,
   ],
 })
 export class HomePage implements OnDestroy {
   private readonly receiptApi = inject(ReceiptApiService);
+  private readonly transloco = inject(TranslocoService);
+  private readonly activeLanguage = toSignal(
+    this.transloco.langChanges$,
+    {
+      initialValue: this.transloco.getActiveLang(),
+    },
+  );
 
   readonly selectedFile = signal<File | null>(null);
   readonly previewUrl = signal<string | null>(null);
@@ -55,7 +98,7 @@ export class HomePage implements OnDestroy {
 
   readonly isProcessing = signal(false);
   readonly isConfirming = signal(false);
-  readonly errorMessage = signal<string | null>(null);
+  readonly error = signal<HomeError | null>(null);
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -66,8 +109,10 @@ export class HomePage implements OnDestroy {
     }
 
     if (!file.type.startsWith('image/')) {
-      this.errorMessage.set(
-        'Choose a JPG, PNG, HEIC, or another image file.',
+      this.error.set(
+        this.translationError(
+          HOME_ERROR_KEYS.unsupportedFile,
+        ),
       );
       input.value = '';
       return;
@@ -79,7 +124,7 @@ export class HomePage implements OnDestroy {
     this.previewUrl.set(URL.createObjectURL(file));
     this.draft.set(null);
     this.confirmedReceipt.set(null);
-    this.errorMessage.set(null);
+    this.error.set(null);
   }
 
   async processReceipt(): Promise<void> {
@@ -90,7 +135,7 @@ export class HomePage implements OnDestroy {
     }
 
     this.isProcessing.set(true);
-    this.errorMessage.set(null);
+    this.error.set(null);
     this.draft.set(null);
     this.confirmedReceipt.set(null);
 
@@ -101,7 +146,7 @@ export class HomePage implements OnDestroy {
 
       this.draft.set(draft);
     } catch (error: unknown) {
-      this.errorMessage.set(this.describeError(error));
+      this.error.set(this.describeError(error));
     } finally {
       this.isProcessing.set(false);
     }
@@ -115,7 +160,7 @@ export class HomePage implements OnDestroy {
     }
 
     this.isConfirming.set(true);
-    this.errorMessage.set(null);
+    this.error.set(null);
 
     try {
       const receipt = await firstValueFrom(
@@ -125,7 +170,7 @@ export class HomePage implements OnDestroy {
       this.confirmedReceipt.set(receipt);
       this.draft.set(null);
     } catch (error: unknown) {
-      this.errorMessage.set(this.describeError(error));
+      this.error.set(this.describeError(error));
     } finally {
       this.isConfirming.set(false);
     }
@@ -137,12 +182,27 @@ export class HomePage implements OnDestroy {
     input.click();
   }
 
-  formatMoney(money: MoneyResponse | null): string {
-    if (money === null) {
-      return 'Not detected';
-    }
-
+  formatMoney(money: MoneyResponse): string {
     return `${money.currency} ${money.amount}`;
+  }
+
+  itemCountTranslationKey(
+    count: number,
+  ): ItemPluralTranslationKey {
+    const category = new Intl.PluralRules(
+      this.activeLanguage(),
+    ).select(count);
+
+    switch (category) {
+      case 'one':
+        return 'home.success.savedItems.one';
+      case 'few':
+        return 'home.success.savedItems.few';
+      case 'many':
+        return 'home.success.savedItems.many';
+      default:
+        return 'home.success.savedItems.other';
+    }
   }
 
   ngOnDestroy(): void {
@@ -156,7 +216,7 @@ export class HomePage implements OnDestroy {
     this.previewUrl.set(null);
     this.draft.set(null);
     this.confirmedReceipt.set(null);
-    this.errorMessage.set(null);
+    this.error.set(null);
     this.isProcessing.set(false);
     this.isConfirming.set(false);
   }
@@ -169,37 +229,64 @@ export class HomePage implements OnDestroy {
     }
   }
 
-  private describeError(error: unknown): string {
+  private describeError(error: unknown): HomeError {
     if (!(error instanceof HttpErrorResponse)) {
-      return 'The receipt request failed.';
+      return this.translationError(
+        HOME_ERROR_KEYS.requestFailed,
+      );
     }
 
     if (error.status === 0) {
-      return 'The backend is unavailable. Check that make dev is running.';
+      return this.translationError(
+        HOME_ERROR_KEYS.backendUnavailable,
+      );
     }
 
     if (error.status === 404) {
-      return 'The original receipt draft could not be found.';
+      return this.translationError(
+        HOME_ERROR_KEYS.draftNotFound,
+      );
     }
 
     if (error.status === 409) {
-      return 'This receipt draft has already been confirmed.';
+      return this.translationError(
+        HOME_ERROR_KEYS.alreadyConfirmed,
+      );
     }
 
     if (error.status === 422) {
-      return 'The receipt contains missing or invalid information.';
+      return this.translationError(
+        HOME_ERROR_KEYS.invalidReceipt,
+      );
     }
 
     if (error.status === 503) {
-      return 'The receipt model is starting. Try again in a few seconds.';
+      return this.translationError(
+        HOME_ERROR_KEYS.modelStarting,
+      );
     }
 
-    const detail = error.error?.detail;
+    const detail: unknown = error.error?.detail;
 
-    if (typeof detail === 'string' && detail.length > 0) {
-      return detail;
+    if (
+      typeof detail === 'string' &&
+      detail.trim().length > 0
+    ) {
+      return {
+        kind: 'detail',
+        detail,
+      };
     }
 
-    return 'The receipt request failed.';
+    return this.translationError(
+      HOME_ERROR_KEYS.httpFallback,
+    );
+  }
+
+  private translationError(key: HomeErrorKey): HomeError {
+    return {
+      kind: 'translation',
+      key,
+    };
   }
 }
