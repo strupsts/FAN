@@ -12,6 +12,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "windows-data-root.ps1")
+
 $script:EffectiveDistro = $DistroName
 $script:NeedsUserInitialization = $false
 $script:StageIndex = 0
@@ -84,21 +86,6 @@ function Ensure-WinGetPackage {
     Invoke-CheckedNative winget.exe install --id $Id --exact --silent --accept-package-agreements --accept-source-agreements
 }
 
-function Resolve-DefaultDataRoot {
-    $systemDrive = [Environment]::GetEnvironmentVariable("SystemDrive")
-    $preferred = Get-PSDrive -PSProvider FileSystem |
-        Where-Object { $_.Root -and -not $_.Root.StartsWith($systemDrive, [StringComparison]::OrdinalIgnoreCase) } |
-        Sort-Object Free -Descending |
-        Select-Object -First 1
-
-    if ($null -ne $preferred) {
-        return (Join-Path $preferred.Root "DevInfra\WSL")
-    }
-
-    Write-Warning "No non-system fixed drive was found; WSL data will use the current user's local application data on C:."
-    return (Join-Path $env:LOCALAPPDATA "FAN\WSL")
-}
-
 function Test-NvidiaSmiWindows {
     $candidate = Get-Command nvidia-smi.exe -ErrorAction SilentlyContinue
     if ($null -ne $candidate) {
@@ -123,9 +110,7 @@ if (-not (Test-IsAdministrator)) {
 if ($null -eq (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
     throw "WinGet is required. Install or update Microsoft App Installer, then rerun."
 }
-if (-not $DataRoot) {
-    $DataRoot = Resolve-DefaultDataRoot
-}
+$DataRoot = Resolve-FanWslDataRoot -ExplicitDataRoot $DataRoot
 
 Write-Host "F.A.N. Windows Host Bootstrap"
 Write-Host

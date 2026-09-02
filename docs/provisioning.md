@@ -43,10 +43,13 @@ Use an explicit external data root when desired:
 .\bootstrap\windows.ps1 -DataRoot 'D:\DevInfra\WSL'
 ```
 
-When `-DataRoot` is omitted, the bootstrap chooses a non-system filesystem drive
-when one exists. It falls back to `%LOCALAPPDATA%\FAN\WSL` only when no external
-drive is available, and prints a warning. An existing non-empty target directory
-is never overwritten.
+An explicit `-DataRoot` always wins and may point to any desired drive. When it
+is omitted, the bootstrap uses `D:\DevInfra\WSL` only when `D:` is a usable
+non-system filesystem drive. It does not guess among other secondary drives. If
+the preferred Development drive is unavailable or unusable, it falls back to
+`%LOCALAPPDATA%\FAN\WSL`, prints a warning, and explains that `-DataRoot` must be
+supplied to place WSL elsewhere. An existing non-empty target directory is never
+overwritten.
 
 Installing WSL components can require a reboot. Exit code `10` means the
 components were enabled and Windows must restart. Reboot and rerun the exact
