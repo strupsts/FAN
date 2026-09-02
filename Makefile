@@ -2,18 +2,22 @@
 
 BACKEND_DIR := backend
 PYTHON := $(BACKEND_DIR)/.venv/bin/python
-PIP := $(PYTHON) -m pip
+PROFILE ?= dev
+PROVISION_YES_ARG := $(if $(filter 1 yes true,$(YES)),--yes,)
 
-.PHONY: help setup api db-up db-down db-logs db-clear health health-db vlm-health vlm-serve vlm-sample process api-e2e api-e2e-clean test smoke status clean-pyc frontend frontend-build frontend-lint android-debug-sync dev dev-down dev-status dev-logs db-upgrade db-downgrade db-current db-check db-revision db-stamp api-schema frontend-api-types api-contracts api-contracts-check
+.PHONY: help provision doctor provision-test setup api db-up db-down db-logs db-clear health health-db vlm-health vlm-serve vlm-sample process api-e2e api-e2e-clean test smoke status clean-pyc frontend frontend-build frontend-lint android-debug-sync dev dev-down dev-status dev-logs db-upgrade db-downgrade db-current db-check db-revision db-stamp api-schema frontend-api-types api-contracts api-contracts-check
 
 help:
 > @echo "F.A.N. dev commands:"
 > @echo ""
-> @echo "  make dev        Start the full development stack"
+> @echo "  make provision  Converge the Linux environment (PROFILE=dev|backend|server)"
+> @echo "  make doctor     Read-only environment diagnosis"
+> @echo "  make provision-test  Run provisioning logic tests"
+> @echo "  make dev        Verify and start the provisioned development stack"
 > @echo "  make dev-down   Stop the full development stack"
 > @echo "  make dev-status Show development stack status"
 > @echo "  make dev-logs   Follow API and VLM logs"
-> @echo "  make setup      Create/update WSL backend venv and install dependencies"
+> @echo "  make setup      Compatibility alias for backend-only provisioning"
 > @echo "  make api        Start FastAPI dev server"
 > @echo "  make api-schema Export FastAPI OpenAPI schema"
 > @echo "  make frontend-api-types Generate frontend API types"
@@ -47,7 +51,17 @@ help:
 > @echo "  make clean-pyc  Remove Python cache files"
 
 dev:
+> @bash scripts/doctor.sh --profile dev --quiet
 > bash scripts/dev_stack.sh up
+
+provision:
+> bash scripts/provision/linux.sh --profile "$(PROFILE)" $(PROVISION_YES_ARG)
+
+doctor:
+> @bash scripts/doctor.sh --profile "$(PROFILE)"
+
+provision-test:
+> bash scripts/provision/tests/run.sh
 
 dev-down:
 > bash scripts/dev_stack.sh down
@@ -61,9 +75,8 @@ dev-logs:
 > tail -n 100 -F .runtime/logs/vlm.log .runtime/logs/api.log .runtime/logs/frontend.log
 
 setup:
-> python3 -m venv $(BACKEND_DIR)/.venv
-> $(PIP) install -U pip
-> $(PIP) install -e "$(BACKEND_DIR)[dev]"
+> @echo "make setup now performs backend-only locked provisioning."
+> $(MAKE) provision PROFILE=backend YES="$(YES)"
 
 api:
 > cd $(BACKEND_DIR) && PYTHONPATH=. .venv/bin/uvicorn app.main:app --reload

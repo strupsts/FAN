@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${ROOT_DIR}/scripts/ml_runtime_env.sh"
 
 RUNTIME_DIR="${ROOT_DIR}/.runtime"
 PID_DIR="${RUNTIME_DIR}/pids"
@@ -206,21 +207,21 @@ check_requirements() {
   done
 
   [[ -x "${ROOT_DIR}/backend/.venv/bin/uvicorn" ]] \
-    || fail "Backend environment is missing. Run: make setup"
+    || fail "Backend environment is missing. Run: make provision"
 
-  local vlm_venv="${VLM_VENV:-${HOME}/.venvs/fan-vllm}"
+  local vlm_venv="${VLM_VENV}"
 
   [[ -x "${vlm_venv}/bin/vllm" ]] \
-    || fail "VLM environment is missing: ${vlm_venv}"
+    || fail "VLM environment is missing: ${vlm_venv}. Run: make provision"
 
   [[ -s "${HOME}/.nvm/nvm.sh" ]] \
-    || fail "nvm is missing. Install nvm before running the frontend."
+    || fail "nvm is missing. Run: make provision"
 
   [[ -f "${ROOT_DIR}/frontend/package.json" ]] \
     || fail "Frontend project is missing."
 
   [[ -d "${ROOT_DIR}/frontend/node_modules" ]] \
-    || fail "Frontend dependencies are missing. Run: cd frontend && npm install"
+    || fail "Frontend dependencies are missing. Run: make provision"
 }
 
 

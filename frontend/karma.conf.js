@@ -1,6 +1,21 @@
 // Karma configuration file, see link for more information
 // https://karma-runner.github.io/1.0/config/configuration-file.html
 
+const childProcess = require('child_process');
+const path = require('path');
+
+function windowsBrowserDataDir() {
+  const chromeBinary = process.env.CHROME_BIN || '';
+  if (!chromeBinary.toLowerCase().endsWith('.exe')) {
+    return undefined;
+  }
+
+  const windowsTemp = childProcess
+    .execFileSync('cmd.exe', ['/d', '/c', 'echo', '%TEMP%'], { encoding: 'utf8' })
+    .trim();
+  return path.win32.join(windowsTemp, `fan-karma-${process.pid}`);
+}
+
 module.exports = function (config) {
   config.set({
     basePath: '',
@@ -33,6 +48,13 @@ module.exports = function (config) {
       ]
     },
     reporters: ['progress', 'kjhtml'],
+    customLaunchers: {
+      WSLEdgeHeadless: {
+        base: 'ChromeHeadless',
+        chromeDataDir: windowsBrowserDataDir(),
+        flags: ['--no-sandbox']
+      }
+    },
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
