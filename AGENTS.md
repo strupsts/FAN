@@ -50,6 +50,13 @@ Implement only the behavior in scope. Check the current code and tests before tr
 - Current code and tests are the implementation truth. Documentation may describe desired or historical states.
 - ADRs record architectural reasoning and history. They may be superseded; do not use them as an implementation journal or treat them as infallible descriptions of current code.
 
+## Provisioning
+
+- `make provision` is the authoritative Linux environment convergence command; `make doctor` must remain read-only, and `make dev` must never install dependencies.
+- Dependency changes must update the corresponding declaration and lockfile. Backend and ML environments remain separate.
+- Never repair copied virtual environments by rewriting absolute shebangs. Let provisioning detect and replace an invalid environment from its lockfile.
+- Detailed Windows, WSL, native Ubuntu, GPU, cache, and Android rules live in `docs/provisioning.md`.
+
 ## Required verification
 
 Run checks relevant to the touched areas, and run the full required set before pushing a cross-layer change. Make targets assume WSL, `backend/.venv`, and the repository's configured Node environment.
@@ -77,7 +84,7 @@ When WSL has no Linux Chrome binary, this environment-specific fallback has work
 
 ```bash
 cd frontend
-CHROME_BIN=/mnt/c/PROGRA~2/Microsoft/Edge/Application/msedge.exe npm test -- --watch=false --browsers=ChromeHeadless
+CHROME_BIN=/mnt/c/PROGRA~2/Microsoft/Edge/Application/msedge.exe npm test -- --watch=false --browsers=WSLEdgeHeadless
 ```
 
 Also run `git diff --check` before committing.

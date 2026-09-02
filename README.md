@@ -15,6 +15,22 @@ Current goal: rebuild the backend as a clean modular monolith using light hexago
 7. System stores prediction/correction pairs for future evaluation and training.
 8. User can view transaction history and spending summary.
 
+## Development environment
+
+The supported development host is Windows 11 with WSL2 and Ubuntu 24.04 LTS.
+Native Ubuntu 24.04 LTS is also supported as a Linux foundation. From Ubuntu:
+
+```bash
+make provision
+make doctor
+make dev
+```
+
+Provisioning asks for confirmation and defaults to **No**. For automation, use
+`make provision YES=1` with non-interactive sudo already configured. See
+[docs/provisioning.md](docs/provisioning.md) for the clean Windows bootstrap,
+profiles, external cache placement, GPU prerequisites, Android, and recovery.
+
 ## Architecture
 
 The backend is organized around:
